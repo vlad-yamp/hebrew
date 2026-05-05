@@ -28,11 +28,21 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     private val _cardSaved = MutableLiveData(false)
     val cardSaved: LiveData<Boolean> = _cardSaved
 
-    private var currentHebrew: String = ""
-    private var selectedTranslation: String = ""
+    // inputText — what the user spoke/typed
+    // selectedVariant — chosen translation (Russian when isHebrewInput, Hebrew when !isHebrewInput)
+    private var inputText: String = ""
+    var isHebrewInput: Boolean = true
+        private set
+    private var selectedVariant: String = ""
 
-    fun translate(hebrewText: String) {
-        currentHebrew = hebrewText
+    // Always the Hebrew text, for TTS and examples
+    val currentHebrew: String get() = if (isHebrewInput) inputText else selectedVariant
+
+    fun translate(text: String, isHebrewInput: Boolean) {
+        this.isHebrewInput = isHebrewInput
+        this.inputText = text
+        this.selectedVariant = ""
+
         val apiKey = prefs.getString("openai_api_key", "") ?: ""
         if (apiKey.isBlank()) {
             _translationState.value = TranslationState.Error("Введите API ключ в настройках")
@@ -42,26 +52,34 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
         _translationState.value = TranslationState.Loading
         viewModelScope.launch {
             try {
-                val prompt = """Переведи следующее слово или фразу с иврита на русский язык.
+                val prompt = if (isHebrewInput) {
+                    """Переведи следующее слово или фразу с иврита на русский язык.
 Если есть несколько значений, дай до 5 вариантов перевода, пронумеровав их (1. ... 2. ... и т.д.).
 Если значение одно — просто напиши перевод без нумерации.
 Только переводы, без объяснений.
 
-Иврит: $hebrewText"""
+Иврит: $text"""
+                } else {
+                    """Переведи следующее слово или фразу с русского на иврит.
+Если есть несколько вариантов написания или значений, дай до 5 вариантов, пронумеровав их (1. ... 2. ... и т.д.).
+Если вариант один — просто напиши перевод без нумерации.
+Только переводы на иврите, без транслитерации и объяснений.
+
+Русский: $text"""
+                }
 
                 val response = OpenAIClient.service.getCompletion(
                     auth = "Bearer $apiKey",
-                    request = ChatRequest(
-                        messages = listOf(ChatMessage("user", prompt))
-                    )
+                    request = ChatRequest(messages = listOf(ChatMessage("user", prompt)))
                 )
                 val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
                 val variants = parseVariants(content)
                 if (variants.size > 1) {
+                    selectedVariant = variants[0]
                     _translationState.value = TranslationState.MultipleVariants(variants)
                 } else {
                     val single = variants.firstOrNull() ?: content
-                    selectedTranslation = single
+                    selectedVariant = single
                     _translationState.value = TranslationState.SingleTranslation(single)
                 }
             } catch (e: Exception) {
@@ -70,18 +88,20 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun selectVariant(translation: String) {
-        selectedTranslation = translation
+    fun selectVariant(text: String) {
+        selectedVariant = text
     }
 
     fun loadExamples() {
         val apiKey = prefs.getString("openai_api_key", "") ?: ""
         if (apiKey.isBlank()) return
+        val hebrew = currentHebrew
+        if (hebrew.isBlank()) return
 
         _examplesState.value = ExamplesState.Loading
         viewModelScope.launch {
             try {
-                val prompt = """Дай 5 примеров использования слова или фразы «$currentHebrew» (иврит) в предложениях.
+                val prompt = """Дай 5 примеров использования слова или фразы «$hebrew» (иврит) в предложениях.
 Формат каждого примера:
 [предложение на иврите]
 [перевод на русский]
@@ -104,9 +124,11 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveCard() {
-        if (currentHebrew.isBlank() || selectedTranslation.isBlank()) return
+        val hebrew = if (isHebrewInput) inputText else selectedVariant
+        val russian = if (isHebrewInput) selectedVariant else inputText
+        if (hebrew.isBlank() || russian.isBlank()) return
         viewModelScope.launch {
-            repository.insert(Card(hebrew = currentHebrew, russian = selectedTranslation))
+            repository.insert(Card(hebrew = hebrew, russian = russian))
             _cardSaved.value = true
         }
     }

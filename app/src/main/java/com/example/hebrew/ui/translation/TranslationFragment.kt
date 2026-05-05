@@ -2,6 +2,7 @@ package com.example.hebrew.ui.translation
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,9 @@ class TranslationFragment : Fragment() {
     private val viewModel: TranslationViewModel by viewModels()
     private var tts: TextToSpeech? = null
 
+    private var isHebrewInput = true
+    private var inputText = ""
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -33,15 +37,38 @@ class TranslationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val hebrewText = arguments?.getString("hebrewText") ?: ""
-        binding.tvHebrewPhrase.text = hebrewText
+        isHebrewInput = arguments?.getBoolean("isHebrewInput", true) ?: true
+        inputText = arguments?.getString("inputText") ?: arguments?.getString("hebrewText") ?: ""
 
+        applyInputLanguage()
         initTts()
         setupObservers()
         setupClickListeners()
 
         if (viewModel.translationState.value is TranslationState.Idle) {
-            viewModel.translate(hebrewText)
+            viewModel.translate(inputText, isHebrewInput)
+        }
+    }
+
+    private fun applyInputLanguage() {
+        binding.tvHebrewPhrase.text = inputText
+
+        if (isHebrewInput) {
+            binding.tvInputLabel.text = "Иврит"
+            binding.tvHebrewPhrase.textDirection = View.TEXT_DIRECTION_RTL
+            binding.tvHebrewPhrase.gravity = Gravity.END
+            binding.tvTranslationLabel.text = "Перевод"
+            binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_LOCALE
+            binding.tvSingleTranslation.gravity = Gravity.START
+            binding.btnSpeakHebrew.visibility = View.VISIBLE
+        } else {
+            binding.tvInputLabel.text = "Русский"
+            binding.tvHebrewPhrase.textDirection = View.TEXT_DIRECTION_LOCALE
+            binding.tvHebrewPhrase.gravity = Gravity.START
+            binding.tvTranslationLabel.text = "Иврит"
+            binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_RTL
+            binding.tvSingleTranslation.gravity = Gravity.END
+            binding.btnSpeakHebrew.visibility = View.GONE
         }
     }
 
@@ -71,6 +98,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
+                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.GONE
                 }
 
                 is TranslationState.SingleTranslation -> {
@@ -81,6 +109,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.VISIBLE
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
+                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.VISIBLE
                 }
 
                 is TranslationState.MultipleVariants -> {
@@ -90,6 +119,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.VISIBLE
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
+                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.VISIBLE
                     populateVariants(state.variants)
                 }
 
@@ -144,6 +174,10 @@ class TranslationFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnSpeakHebrew.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
         binding.btnSaveCard.setOnClickListener {
             val checked = binding.radioGroupVariants.checkedRadioButtonId
@@ -168,6 +202,10 @@ class TranslationFragment : Fragment() {
                 this.text = text
                 textSize = 16f
                 setPadding(8, 8, 8, 8)
+                if (!isHebrewInput) {
+                    textDirection = View.TEXT_DIRECTION_RTL
+                    gravity = Gravity.END
+                }
                 if (index == 0) isChecked = true
             }
             binding.radioGroupVariants.addView(rb)

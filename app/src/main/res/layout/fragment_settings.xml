@@ -17,6 +17,7 @@
         android:textColor="@color/colorPrimary"
         android:layout_marginBottom="24dp" />
 
+    <!-- API Key -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -46,7 +47,7 @@
         android:textSize="12sp"
         android:textColor="@color/grey_medium"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="28dp" />
 
     <!-- Repetitions setting -->
     <TextView

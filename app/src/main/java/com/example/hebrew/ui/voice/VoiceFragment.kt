@@ -1,6 +1,7 @@
 package com.example.hebrew.ui.voice
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -25,6 +26,10 @@ class VoiceFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: VoiceViewModel by viewModels()
     private var speechRecognizer: SpeechRecognizer? = null
+    private var isHebrewInput = true
+    private val prefs by lazy {
+        requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+    }
 
     private val requestPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -42,8 +47,28 @@ class VoiceFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        isHebrewInput = prefs.getBoolean("default_lang_hebrew", true)
+
+        binding.langToggle.check(if (isHebrewInput) R.id.btnLangHebrew else R.id.btnLangRussian)
+        updateHint()
+
+        binding.langToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                isHebrewInput = (checkedId == R.id.btnLangHebrew)
+                prefs.edit().putBoolean("default_lang_hebrew", isHebrewInput).apply()
+                updateHint()
+            }
+        }
+
         binding.btnMic.setOnClickListener { checkPermissionAndListen() }
         viewModel.state.observe(viewLifecycleOwner) { renderState(it) }
+    }
+
+    private fun updateHint() {
+        binding.tvHint.text = getString(
+            if (isHebrewInput) R.string.hint_voice else R.string.hint_voice_russian
+        )
     }
 
     private fun renderState(state: VoiceState) = when (state) {
@@ -77,10 +102,11 @@ class VoiceFragment : Fragment() {
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
 
+        val locale = if (isHebrewInput) "iw-IL" else "ru-RU"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "iw-IL")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "iw-IL")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale)
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
         }
@@ -98,7 +124,10 @@ class VoiceFragment : Fragment() {
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
                 if (!text.isNullOrBlank()) {
-                    val bundle = Bundle().apply { putString("hebrewText", text) }
+                    val bundle = Bundle().apply {
+                        putString("inputText", text)
+                        putBoolean("isHebrewInput", isHebrewInput)
+                    }
                     findNavController().navigate(R.id.action_voice_to_translation, bundle)
                 } else {
                     Toast.makeText(requireContext(), getString(R.string.error_no_speech), Toast.LENGTH_SHORT).show()

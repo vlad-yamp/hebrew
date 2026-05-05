@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Hebrew phrase card -->
+        <!-- Input card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,13 +26,32 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Иврит"
-                    android:textSize="12sp"
-                    android:textColor="@color/grey_medium"
-                    android:textAllCaps="true" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvInputLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Иврит"
+                        android:textSize="12sp"
+                        android:textColor="@color/grey_medium"
+                        android:textAllCaps="true" />
+
+                    <ImageButton
+                        android:id="@+id/btnSpeakHebrew"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_speak"
+                        android:tint="@color/colorPrimary"
+                        android:contentDescription="Озвучить"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvHebrewPhrase"
@@ -41,8 +60,6 @@
                     android:textSize="28sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorPrimary"
-                    android:textDirection="rtl"
-                    android:gravity="end"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -73,6 +90,7 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/tvTranslationLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Перевод"
@@ -107,6 +125,7 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/tvVariantsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/select_translation"
@@ -125,7 +144,7 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExamples"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginBottom="12dp"
             android:text="@string/btn_examples"
             android:visibility="gone"
