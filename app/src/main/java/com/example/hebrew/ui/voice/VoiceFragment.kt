@@ -63,6 +63,9 @@ class VoiceFragment : Fragment() {
 
         binding.btnMic.setOnClickListener { checkPermissionAndListen() }
         viewModel.state.observe(viewLifecycleOwner) { renderState(it) }
+        viewModel.cardCount.observe(viewLifecycleOwner) { count ->
+            binding.tvCardCount.text = getString(R.string.card_count, count)
+        }
     }
 
     private fun updateHint() {
