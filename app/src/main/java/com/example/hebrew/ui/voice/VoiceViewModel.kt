@@ -1,10 +1,20 @@
 package com.example.hebrew.ui.voice
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import com.example.hebrew.HebrewApplication
+import kotlinx.coroutines.flow.map
 
-class VoiceViewModel : ViewModel() {
+class VoiceViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val repository = (app as HebrewApplication).repository
+
+    val cardCount: LiveData<Int> = repository.allCards
+        .map { it.size }
+        .asLiveData()
 
     private val _state = MutableLiveData<VoiceState>(VoiceState.Idle)
     val state: LiveData<VoiceState> = _state
