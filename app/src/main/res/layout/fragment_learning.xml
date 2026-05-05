@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:textSize="16sp"
         android:textColor="@color/text_secondary"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -22,119 +22,182 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/swipe_hint"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:textColor="@color/grey_medium"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         app:layout_constraintTop_toBottomOf="@id/tvProgress"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Flashcard container -->
-    <FrameLayout
-        android:id="@+id/cardContainer"
+    <!-- Scrollable area: card + action buttons + examples -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/tvSwipeHint"
-        app:layout_constraintBottom_toTopOf="@id/btnUnknown"
+        app:layout_constraintBottom_toTopOf="@id/buttonBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Front side: Hebrew -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cardFront"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/colorCardFront">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
+            <!-- Flip card -->
+            <FrameLayout
+                android:id="@+id/cardContainer"
+                android:layout_width="match_parent"
+                android:layout_height="180dp">
+
+                <!-- Front: Hebrew -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardFront"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/colorCardFront">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/tvHebrewWord"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorPrimary"
+                            android:gravity="center"
+                            android:textDirection="rtl" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/tap_to_flip"
+                            android:textSize="12sp"
+                            android:textColor="@color/grey_medium"
+                            android:layout_marginTop="12dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Back: Russian -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardBack"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="@color/colorCardBack">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/tvRussianWord"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="26sp"
+                            android:textColor="@color/text_primary"
+                            android:gravity="center" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/tap_to_flip_back"
+                            android:textSize="12sp"
+                            android:textColor="@color/grey_medium"
+                            android:layout_marginTop="12dp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+            </FrameLayout>
+
+            <!-- Action buttons: TTS + Examples -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:gravity="center"
-                android:padding="24dp">
+                android:layout_marginTop="12dp">
 
-                <TextView
-                    android:id="@+id/tvHebrewWord"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="40sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/colorPrimary"
-                    android:gravity="center"
-                    android:textDirection="rtl" />
-
-                <TextView
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSpeak"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/tap_to_flip"
-                    android:textSize="13sp"
-                    android:textColor="@color/grey_medium"
-                    android:layout_marginTop="20dp" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+                    android:layout_marginEnd="12dp"
+                    android:text="@string/btn_speak"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-        <!-- Back side: Russian -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cardBack"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/colorCardBack">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="24dp">
-
-                <TextView
-                    android:id="@+id/tvRussianWord"
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExamples"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="28sp"
-                    android:textColor="@color/text_primary"
-                    android:gravity="center" />
+                    android:text="@string/btn_examples"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </FrameLayout>
 
-    <!-- Known button (right) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnKnown"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="32dp"
-        android:text="@string/btn_known"
-        android:backgroundTint="@color/colorKnown"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btnUnknown"
-        app:layout_constraintEnd_toEndOf="parent" />
+            <!-- Examples loading -->
+            <ProgressBar
+                android:id="@+id/progressExamples"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
 
-    <!-- Unknown button (left) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnUnknown"
+            <!-- Examples list (populated dynamically) -->
+            <LinearLayout
+                android:id="@+id/examplesContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Buttons fixed at bottom -->
+    <LinearLayout
+        android:id="@+id/buttonBar"
         android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
-        android:text="@string/btn_unknown"
-        android:backgroundTint="@color/colorUnknown"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnKnown"
-        app:layout_constraintWidth_percent="0.5" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUnknown"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/btn_unknown"
+            android:backgroundTint="@color/colorUnknown" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnKnown"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="@string/btn_known"
+            android:backgroundTint="@color/colorKnown" />
+    </LinearLayout>
 
     <!-- All learned overlay -->
     <LinearLayout

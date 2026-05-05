@@ -25,6 +25,8 @@
     <string name="btn_known">Знаю ✓</string>
     <string name="btn_unknown">Не знаю ✗</string>
     <string name="tap_to_flip">Нажмите, чтобы увидеть перевод</string>
+    <string name="tap_to_flip_back">Нажмите, чтобы вернуться к иврит</string>
+    <string name="btn_speak">🔊 Произнести</string>
     <string name="all_learned">Вы выучили все слова! 🎉</string>
     <string name="btn_restart_learning">Учить заново</string>
     <string name="title_settings">Настройки</string>

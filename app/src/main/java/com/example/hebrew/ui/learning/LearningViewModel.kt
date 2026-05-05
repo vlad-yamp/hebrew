@@ -7,6 +7,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.hebrew.HebrewApplication
+import com.example.hebrew.api.ChatMessage
+import com.example.hebrew.api.ChatRequest
+import com.example.hebrew.api.OpenAIClient
 import com.example.hebrew.data.Card
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -20,6 +23,9 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _state = MutableLiveData<LearningState>(LearningState.Loading)
     val state: LiveData<LearningState> = _state
+
+    private val _examplesState = MutableLiveData<ExamplesState>(ExamplesState.Idle)
+    val examplesState: LiveData<ExamplesState> = _examplesState
 
     private var allCards: List<Card> = emptyList()
     private var sessionQueue: MutableList<Long> = mutableListOf()
@@ -50,7 +56,6 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
                     return@launch
                 }
             }
-
             startNewSession()
         }
     }
@@ -63,15 +68,13 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun showCurrentCard() {
+        _examplesState.value = ExamplesState.Idle
         if (currentIndex >= sessionQueue.size) {
             reloadAfterRound()
             return
         }
         val id = sessionQueue[currentIndex]
-        val card = allCards.find { it.id == id } ?: run {
-            advanceAndShow()
-            return
-        }
+        val card = allCards.find { it.id == id } ?: run { advanceAndShow(); return }
         _state.value = LearningState.ShowCard(
             card = card,
             current = currentIndex + 1,
@@ -80,9 +83,9 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun flipCard() {
+    fun toggleFlip() {
         val current = _state.value as? LearningState.ShowCard ?: return
-        _state.value = current.copy(isFlipped = true)
+        _state.value = current.copy(isFlipped = !current.isFlipped)
     }
 
     fun markKnown() {
@@ -103,11 +106,8 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private fun advanceAndShow() {
         currentIndex++
         persistSession()
-        if (currentIndex >= sessionQueue.size) {
-            reloadAfterRound()
-        } else {
-            showCurrentCard()
-        }
+        if (currentIndex >= sessionQueue.size) reloadAfterRound()
+        else showCurrentCard()
     }
 
     private fun reloadAfterRound() {
@@ -119,6 +119,43 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
             } else {
                 startNewSession()
             }
+        }
+    }
+
+    fun loadExamples() {
+        val card = (_state.value as? LearningState.ShowCard)?.card ?: return
+        val apiKey = prefs.getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) return
+
+        _examplesState.value = ExamplesState.Loading
+        viewModelScope.launch {
+            try {
+                val prompt = """Дай 5 примеров использования слова или фразы «${card.hebrew}» (иврит) в предложениях.
+Формат каждого примера:
+[предложение на иврите]
+[перевод на русский]
+
+Разделяй примеры пустой строкой."""
+                val response = OpenAIClient.service.getCompletion(
+                    auth = "Bearer $apiKey",
+                    request = ChatRequest(
+                        messages = listOf(ChatMessage("user", prompt)),
+                        max_tokens = 1000
+                    )
+                )
+                val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
+                _examplesState.value = ExamplesState.Done(parseExamples(content))
+            } catch (e: Exception) {
+                _examplesState.value = ExamplesState.Error(e.message ?: "Ошибка")
+            }
+        }
+    }
+
+    private fun parseExamples(content: String): List<ExampleItem> {
+        val blocks = content.trim().split(Regex("\\n\\s*\\n"))
+        return blocks.mapNotNull { block ->
+            val lines = block.trim().lines().filter { it.isNotBlank() }
+            if (lines.size >= 2) ExampleItem(lines[0].trim(), lines[1].trim()) else null
         }
     }
 
@@ -139,10 +176,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun clearSession() {
-        prefs.edit()
-            .remove("session_queue")
-            .remove("session_index")
-            .apply()
+        prefs.edit().remove("session_queue").remove("session_index").apply()
     }
 }
 
@@ -156,3 +190,12 @@ sealed class LearningState {
         val isFlipped: Boolean
     ) : LearningState()
 }
+
+sealed class ExamplesState {
+    object Idle : ExamplesState()
+    object Loading : ExamplesState()
+    data class Done(val examples: List<ExampleItem>) : ExamplesState()
+    data class Error(val message: String) : ExamplesState()
+}
+
+data class ExampleItem(val hebrew: String, val russian: String)
