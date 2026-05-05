@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/voiceFragment">
+
+    <fragment
+        android:id="@+id/voiceFragment"
+        android:name="com.example.hebrew.ui.voice.VoiceFragment"
+        android:label="@string/tab_input"
+        tools:layout="@layout/fragment_voice">
+        <action
+            android:id="@+id/action_voice_to_translation"
+            app:destination="@id/translationFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/translationFragment"
+        android:name="com.example.hebrew.ui.translation.TranslationFragment"
+        android:label="Перевод"
+        tools:layout="@layout/fragment_translation">
+        <argument
+            android:name="hebrewText"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/cardListFragment"
+        android:name="com.example.hebrew.ui.cards.CardListFragment"
+        android:label="@string/title_card_list"
+        tools:layout="@layout/fragment_card_list">
+        <action
+            android:id="@+id/action_cardList_to_learning"
+            app:destination="@id/learningFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/learningFragment"
+        android:name="com.example.hebrew.ui.learning.LearningFragment"
+        android:label="Заучивание"
+        tools:layout="@layout/fragment_learning" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.hebrew.ui.settings.SettingsFragment"
+        android:label="@string/title_settings"
+        tools:layout="@layout/fragment_settings" />
+
+</navigation>
