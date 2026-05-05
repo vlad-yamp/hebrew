@@ -71,7 +71,7 @@
                             android:id="@+id/tvHebrewWord"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="40sp"
+                            android:textSize="28sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorPrimary"
                             android:gravity="center"
@@ -108,7 +108,7 @@
                             android:id="@+id/tvRussianWord"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="26sp"
+                            android:textSize="18sp"
                             android:textColor="@color/text_primary"
                             android:gravity="center" />
 
@@ -134,7 +134,7 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSpeak"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="12dp"
                     android:text="@string/btn_speak"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
@@ -142,7 +142,7 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExamples"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:text="@string/btn_examples"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
             </LinearLayout>

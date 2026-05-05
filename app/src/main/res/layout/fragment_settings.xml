@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -45,12 +46,31 @@
         android:textSize="12sp"
         android:textColor="@color/grey_medium"
         android:layout_marginTop="8dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="32dp" />
+
+    <!-- Repetitions setting -->
+    <TextView
+        android:id="@+id/tvRepetitionsLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="4dp" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderRepetitions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="1"
+        android:valueTo="10"
+        android:stepSize="1"
+        app:labelBehavior="floating" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
         android:text="@string/btn_save_settings" />
 
 </LinearLayout>

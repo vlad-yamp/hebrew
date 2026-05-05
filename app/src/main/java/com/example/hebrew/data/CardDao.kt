@@ -9,8 +9,8 @@ interface CardDao {
     @Query("SELECT * FROM cards ORDER BY addedAt DESC")
     fun getAllCards(): Flow<List<Card>>
 
-    @Query("SELECT * FROM cards WHERE knownCount < 4 ORDER BY addedAt ASC")
-    suspend fun getLearningCards(): List<Card>
+    @Query("SELECT * FROM cards WHERE knownCount < :threshold ORDER BY addedAt ASC")
+    suspend fun getLearningCards(threshold: Int): List<Card>
 
     @Query("SELECT COUNT(*) FROM cards")
     suspend fun getCount(): Int

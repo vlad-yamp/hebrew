@@ -1,6 +1,7 @@
 package com.example.hebrew.ui.translation
 
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,12 +12,16 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.hebrew.R
 import com.example.hebrew.databinding.FragmentTranslationBinding
+import com.example.hebrew.databinding.ItemExampleBinding
+import com.example.hebrew.ui.learning.ExampleItem
+import java.util.Locale
 
 class TranslationFragment : Fragment() {
 
     private var _binding: FragmentTranslationBinding? = null
     private val binding get() = _binding!!
     private val viewModel: TranslationViewModel by viewModels()
+    private var tts: TextToSpeech? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -31,11 +36,26 @@ class TranslationFragment : Fragment() {
         val hebrewText = arguments?.getString("hebrewText") ?: ""
         binding.tvHebrewPhrase.text = hebrewText
 
+        initTts()
         setupObservers()
         setupClickListeners()
 
         if (viewModel.translationState.value is TranslationState.Idle) {
             viewModel.translate(hebrewText)
+        }
+    }
+
+    private fun initTts() {
+        tts = TextToSpeech(requireContext()) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                var result = tts?.setLanguage(Locale("iw"))
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    result = tts?.setLanguage(Locale("he"))
+                }
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.setLanguage(Locale.getDefault())
+                }
+            }
         }
     }
 
@@ -86,12 +106,11 @@ class TranslationFragment : Fragment() {
                 is ExamplesState.Idle -> {}
                 is ExamplesState.Loading -> {
                     binding.progressExamples.visibility = View.VISIBLE
-                    binding.cardExamples.visibility = View.GONE
+                    binding.examplesContainer.removeAllViews()
                 }
                 is ExamplesState.Done -> {
                     binding.progressExamples.visibility = View.GONE
-                    binding.cardExamples.visibility = View.VISIBLE
-                    binding.tvExamples.text = state.text
+                    showExamples(state.examples)
                 }
                 is ExamplesState.Error -> {
                     binding.progressExamples.visibility = View.GONE
@@ -106,6 +125,21 @@ class TranslationFragment : Fragment() {
                 Toast.makeText(requireContext(), getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
                 findNavController().popBackStack()
             }
+        }
+    }
+
+    private fun showExamples(examples: List<ExampleItem>) {
+        binding.examplesContainer.removeAllViews()
+        examples.forEach { item ->
+            val itemBinding = ItemExampleBinding.inflate(
+                layoutInflater, binding.examplesContainer, false
+            )
+            itemBinding.tvExampleHebrew.text = item.hebrew
+            itemBinding.tvExampleRussian.text = item.russian
+            itemBinding.btnSpeakExample.setOnClickListener {
+                tts?.speak(item.hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+            }
+            binding.examplesContainer.addView(itemBinding.root)
         }
     }
 
@@ -147,6 +181,9 @@ class TranslationFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         super.onDestroyView()
         _binding = null
     }

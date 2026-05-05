@@ -8,7 +8,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.hebrew.data.Card
 import com.example.hebrew.databinding.ItemCardBinding
 
-class CardAdapter : ListAdapter<Card, CardAdapter.CardViewHolder>(DiffCallback) {
+class CardAdapter(
+    private val onCardClick: (Card) -> Unit,
+    private val onDeleteClick: (Card) -> Unit
+) : ListAdapter<Card, CardAdapter.CardViewHolder>(DiffCallback) {
+
+    var threshold: Int = 4
 
     object DiffCallback : DiffUtil.ItemCallback<Card>() {
         override fun areItemsTheSame(a: Card, b: Card) = a.id == b.id
@@ -21,7 +26,9 @@ class CardAdapter : ListAdapter<Card, CardAdapter.CardViewHolder>(DiffCallback) 
         fun bind(card: Card) {
             binding.tvHebrewCard.text = card.hebrew
             binding.tvRussianCard.text = card.russian
-            binding.tvKnownCount.text = "${card.knownCount}/4"
+            binding.tvKnownCount.text = "${card.knownCount}/$threshold"
+            binding.root.setOnClickListener { onCardClick(card) }
+            binding.btnDelete.setOnClickListener { onDeleteClick(card) }
         }
     }
 

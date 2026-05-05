@@ -11,6 +11,7 @@ import com.example.hebrew.api.ChatMessage
 import com.example.hebrew.api.ChatRequest
 import com.example.hebrew.api.OpenAIClient
 import com.example.hebrew.data.Card
+import com.example.hebrew.ui.learning.ExampleItem
 import kotlinx.coroutines.launch
 
 class TranslationViewModel(app: Application) : AndroidViewModel(app) {
@@ -95,7 +96,7 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
-                _examplesState.value = ExamplesState.Done(content)
+                _examplesState.value = ExamplesState.Done(parseExamples(content))
             } catch (e: Exception) {
                 _examplesState.value = ExamplesState.Error(e.message ?: "Ошибка")
             }
@@ -111,6 +112,16 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onCardSavedHandled() { _cardSaved.value = false }
+
+    private fun parseExamples(content: String): List<ExampleItem> {
+        val blocks = content.trim().split(Regex("\\n\\s*\\n"))
+        return blocks.mapNotNull { block ->
+            val lines = block.trim().lines()
+                .map { it.replace(Regex("^\\d+[.)\\s]+"), "").trim() }
+                .filter { it.isNotBlank() }
+            if (lines.size >= 2) ExampleItem(lines[0], lines[1]) else null
+        }
+    }
 
     private fun parseVariants(content: String): List<String> {
         val lines = content.lines()
@@ -134,6 +145,6 @@ sealed class TranslationState {
 sealed class ExamplesState {
     object Idle : ExamplesState()
     object Loading : ExamplesState()
-    data class Done(val text: String) : ExamplesState()
+    data class Done(val examples: List<ExampleItem>) : ExamplesState()
     data class Error(val message: String) : ExamplesState()
 }

@@ -31,11 +31,13 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private var sessionQueue: MutableList<Long> = mutableListOf()
     private var currentIndex = 0
 
+    private fun threshold() = prefs.getInt("repetitions_count", 4)
+
     init { loadSession() }
 
     private fun loadSession() {
         viewModelScope.launch {
-            allCards = repository.getLearningCards()
+            allCards = repository.getLearningCards(threshold())
             if (allCards.isEmpty()) {
                 _state.value = LearningState.AllLearned
                 return@launch
@@ -99,7 +101,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun markUnknown() {
+fun markUnknown() {
         advanceAndShow()
     }
 
@@ -112,7 +114,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun reloadAfterRound() {
         viewModelScope.launch {
-            allCards = repository.getLearningCards()
+            allCards = repository.getLearningCards(threshold())
             if (allCards.isEmpty()) {
                 clearSession()
                 _state.value = LearningState.AllLearned
@@ -154,15 +156,17 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private fun parseExamples(content: String): List<ExampleItem> {
         val blocks = content.trim().split(Regex("\\n\\s*\\n"))
         return blocks.mapNotNull { block ->
-            val lines = block.trim().lines().filter { it.isNotBlank() }
-            if (lines.size >= 2) ExampleItem(lines[0].trim(), lines[1].trim()) else null
+            val lines = block.trim().lines()
+                .map { it.replace(Regex("^\\d+[.)\\s]+"), "").trim() }
+                .filter { it.isNotBlank() }
+            if (lines.size >= 2) ExampleItem(lines[0], lines[1]) else null
         }
     }
 
     fun restartLearning() {
         viewModelScope.launch {
             repository.resetAllKnownCounts()
-            allCards = repository.getLearningCards()
+            allCards = repository.getLearningCards(threshold())
             clearSession()
             startNewSession()
         }

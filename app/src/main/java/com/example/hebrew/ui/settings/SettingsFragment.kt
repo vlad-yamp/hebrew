@@ -26,11 +26,24 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val prefs = requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+
         binding.etApiKey.setText(prefs.getString("openai_api_key", ""))
+
+        val savedReps = prefs.getInt("repetitions_count", 4)
+        binding.sliderRepetitions.value = savedReps.toFloat()
+        binding.tvRepetitionsLabel.text = getString(R.string.label_repetitions, savedReps)
+
+        binding.sliderRepetitions.addOnChangeListener { _, value, _ ->
+            binding.tvRepetitionsLabel.text = getString(R.string.label_repetitions, value.toInt())
+        }
 
         binding.btnSaveSettings.setOnClickListener {
             val key = binding.etApiKey.text?.toString()?.trim() ?: ""
-            prefs.edit().putString("openai_api_key", key).apply()
+            val reps = binding.sliderRepetitions.value.toInt()
+            prefs.edit()
+                .putString("openai_api_key", key)
+                .putInt("repetitions_count", reps)
+                .apply()
             Toast.makeText(requireContext(), getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
         }
     }

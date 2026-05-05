@@ -17,7 +17,15 @@ class CardListFragment : Fragment() {
     private var _binding: FragmentCardListBinding? = null
     private val binding get() = _binding!!
     private val viewModel: CardListViewModel by viewModels()
-    private val adapter = CardAdapter()
+    private val adapter = CardAdapter(
+        onCardClick = { card ->
+            CardPreviewBottomSheet.newInstance(card)
+                .show(childFragmentManager, "card_preview")
+        },
+        onDeleteClick = { card ->
+            viewModel.deleteCard(card)
+        }
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -33,6 +41,7 @@ class CardListFragment : Fragment() {
         binding.recyclerCards.adapter = adapter
 
         viewModel.allCards.observe(viewLifecycleOwner) { cards ->
+            adapter.threshold = viewModel.getThreshold()
             adapter.submitList(cards)
             val count = cards.size
             binding.tvCardCount.text = getString(R.string.card_count, count)
@@ -43,6 +52,16 @@ class CardListFragment : Fragment() {
 
         binding.btnLearn.setOnClickListener {
             findNavController().navigate(R.id.action_cardList_to_learning)
+        }
+
+        binding.btnResetAll.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setMessage(getString(R.string.confirm_restart_all))
+                .setPositiveButton(getString(R.string.confirm_clear_yes)) { _, _ ->
+                    viewModel.resetAll()
+                }
+                .setNegativeButton(getString(R.string.confirm_clear_no), null)
+                .show()
         }
 
         binding.btnClearAll.setOnClickListener {
