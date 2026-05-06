@@ -27,6 +27,7 @@ class TranslationFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: TranslationViewModel by viewModels()
     private var tts: TextToSpeech? = null
+    private val slowKeys = mutableSetOf<String>()
 
     private var isHebrewInput = true
     private var inputText = ""
@@ -164,17 +165,22 @@ class TranslationFragment : Fragment() {
         }
     }
 
+    private fun speakToggle(key: String, text: String) {
+        val isSlow = slowKeys.contains(key)
+        tts?.setSpeechRate(if (isSlow) 0.5f else 1.0f)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+    }
+
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
-        examples.forEach { item ->
+        examples.forEachIndexed { index, item ->
             val itemBinding = ItemExampleBinding.inflate(
                 layoutInflater, binding.examplesContainer, false
             )
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
-            itemBinding.btnSpeakExample.setOnClickListener {
-                tts?.speak(item.hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
-            }
+            itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
             binding.examplesContainer.addView(itemBinding.root)
         }
     }
@@ -182,11 +188,11 @@ class TranslationFragment : Fragment() {
     private fun setupClickListeners() {
         binding.btnSpeakHebrew.setOnClickListener {
             val hebrew = viewModel.currentHebrew
-            if (hebrew.isNotBlank()) tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+            if (hebrew.isNotBlank()) speakToggle("input", hebrew)
         }
         binding.btnSpeakResult.setOnClickListener {
             val hebrew = viewModel.currentHebrew
-            if (hebrew.isNotBlank()) tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+            if (hebrew.isNotBlank()) speakToggle("result", hebrew)
         }
         binding.btnCopyHebrew.setOnClickListener {
             val hebrew = viewModel.currentHebrew

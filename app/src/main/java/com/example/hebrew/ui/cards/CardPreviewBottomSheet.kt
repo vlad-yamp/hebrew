@@ -32,6 +32,14 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
 
     private var tts: TextToSpeech? = null
     private var isFlipped = false
+    private val slowKeys = mutableSetOf<String>()
+
+    private fun speakToggle(key: String, text: String) {
+        val isSlow = slowKeys.contains(key)
+        tts?.setSpeechRate(if (isSlow) 0.5f else 1.0f)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
@@ -65,7 +73,7 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
         initTts()
 
         binding.btnSpeak.setOnClickListener {
-            tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+            speakToggle("main", hebrew)
         }
 
         binding.btnExamples.setOnClickListener {
@@ -131,15 +139,13 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
 
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
-        examples.forEach { item ->
+        examples.forEachIndexed { index, item ->
             val itemBinding = ItemExampleBinding.inflate(
                 layoutInflater, binding.examplesContainer, false
             )
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
-            itemBinding.btnSpeakExample.setOnClickListener {
-                tts?.speak(item.hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
-            }
+            itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
             binding.examplesContainer.addView(itemBinding.root)
         }
     }

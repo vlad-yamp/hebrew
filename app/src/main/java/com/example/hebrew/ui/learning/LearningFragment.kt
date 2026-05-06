@@ -61,8 +61,13 @@ class LearningFragment : Fragment() {
         }
     }
 
-    private fun speak(text: String) {
+    private val slowKeys = mutableSetOf<String>()
+
+    private fun speakToggle(key: String, text: String) {
+        val isSlow = slowKeys.contains(key)
+        tts?.setSpeechRate(if (isSlow) 0.5f else 1.0f)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
     }
 
     // ── Buttons ──────────────────────────────────────────────────────────────
@@ -77,7 +82,7 @@ class LearningFragment : Fragment() {
         binding.btnRestartLearning.setOnClickListener { viewModel.restartLearning() }
         binding.btnSpeak.setOnClickListener {
             val card = (viewModel.state.value as? LearningState.ShowCard)?.card ?: return@setOnClickListener
-            speak(card.hebrew)
+            speakToggle("main", card.hebrew)
         }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
     }
@@ -101,6 +106,7 @@ class LearningFragment : Fragment() {
                     binding.tvSwipeHint.visibility = View.GONE
                 }
                 is LearningState.ShowCard -> {
+                    slowKeys.clear()
                     binding.layoutAllLearned.visibility = View.GONE
                     binding.scrollContent.visibility = View.VISIBLE
                     binding.buttonBar.visibility = View.VISIBLE
@@ -138,13 +144,13 @@ class LearningFragment : Fragment() {
 
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
-        examples.forEach { item ->
+        examples.forEachIndexed { index, item ->
             val itemBinding = ItemExampleBinding.inflate(
                 layoutInflater, binding.examplesContainer, false
             )
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
-            itemBinding.btnSpeakExample.setOnClickListener { speak(item.hebrew) }
+            itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
             binding.examplesContainer.addView(itemBinding.root)
         }
         // Scroll to show examples
