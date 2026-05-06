@@ -49,6 +49,7 @@
     <string name="btn_restart_all">Начать заново</string>
     <string name="confirm_restart_all">Сбросить прогресс всех карточек?</string>
     <string name="label_repetitions">Повторений для запоминания: %d</string>
+    <string name="label_examples_count">Количество примеров: %d</string>
     <string name="lang_hebrew">Иврит</string>
     <string name="lang_russian">Русский</string>
     <string name="hint_voice_russian">Скажите слово или фразу на русском</string>

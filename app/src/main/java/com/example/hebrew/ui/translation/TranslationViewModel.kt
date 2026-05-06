@@ -132,10 +132,11 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
         val hebrew = currentHebrew
         if (hebrew.isBlank()) return
 
+        val examplesCount = prefs.getInt("examples_count", 5)
         _examplesState.value = ExamplesState.Loading
         viewModelScope.launch {
             try {
-                val prompt = """Дай 5 примеров использования слова или фразы «$hebrew» (иврит) в предложениях.
+                val prompt = """Дай $examplesCount примеров использования слова или фразы «$hebrew» (иврит) в предложениях.
 Формат каждого примера:
 [предложение на иврите]
 [перевод на русский]

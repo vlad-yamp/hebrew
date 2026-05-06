@@ -37,12 +37,22 @@ class SettingsFragment : Fragment() {
             binding.tvRepetitionsLabel.text = getString(R.string.label_repetitions, value.toInt())
         }
 
+        val savedExamples = prefs.getInt("examples_count", 5)
+        binding.sliderExamplesCount.value = savedExamples.toFloat()
+        binding.tvExamplesCountLabel.text = getString(R.string.label_examples_count, savedExamples)
+
+        binding.sliderExamplesCount.addOnChangeListener { _, value, _ ->
+            binding.tvExamplesCountLabel.text = getString(R.string.label_examples_count, value.toInt())
+        }
+
         binding.btnSaveSettings.setOnClickListener {
             val key = binding.etApiKey.text?.toString()?.trim() ?: ""
             val reps = binding.sliderRepetitions.value.toInt()
+            val examples = binding.sliderExamplesCount.value.toInt()
             prefs.edit()
                 .putString("openai_api_key", key)
                 .putInt("repetitions_count", reps)
+                .putInt("examples_count", examples)
                 .apply()
             Toast.makeText(requireContext(), getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
         }
