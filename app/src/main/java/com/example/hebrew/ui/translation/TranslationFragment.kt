@@ -1,5 +1,9 @@
 package com.example.hebrew.ui.translation
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.view.Gravity
@@ -61,6 +65,7 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_LOCALE
             binding.tvSingleTranslation.gravity = Gravity.START
             binding.btnSpeakHebrew.visibility = View.VISIBLE
+            binding.hebrewActionsBar.visibility = View.GONE
         } else {
             binding.tvInputLabel.text = "Русский"
             binding.tvHebrewPhrase.textDirection = View.TEXT_DIRECTION_LOCALE
@@ -69,6 +74,7 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_RTL
             binding.tvSingleTranslation.gravity = Gravity.END
             binding.btnSpeakHebrew.visibility = View.GONE
+            binding.hebrewActionsBar.visibility = View.GONE
         }
     }
 
@@ -95,10 +101,10 @@ class TranslationFragment : Fragment() {
                     binding.progressTranslation.visibility = View.VISIBLE
                     binding.cardSingleTranslation.visibility = View.GONE
                     binding.cardVariants.visibility = View.GONE
+                    binding.hebrewActionsBar.visibility = View.GONE
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
-                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.GONE
                 }
 
                 is TranslationState.SingleTranslation -> {
@@ -109,7 +115,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.VISIBLE
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
-                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.VISIBLE
+                    if (!isHebrewInput) binding.hebrewActionsBar.visibility = View.VISIBLE
                 }
 
                 is TranslationState.MultipleVariants -> {
@@ -119,7 +125,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.VISIBLE
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
-                    if (!isHebrewInput) binding.btnSpeakHebrew.visibility = View.VISIBLE
+                    if (!isHebrewInput) binding.hebrewActionsBar.visibility = View.VISIBLE
                     populateVariants(state.variants)
                 }
 
@@ -177,6 +183,28 @@ class TranslationFragment : Fragment() {
         binding.btnSpeakHebrew.setOnClickListener {
             val hebrew = viewModel.currentHebrew
             if (hebrew.isNotBlank()) tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+        binding.btnSpeakResult.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) tts?.speak(hebrew, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+        binding.btnCopyHebrew.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) {
+                val cm = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("Hebrew", hebrew))
+                Toast.makeText(requireContext(), "Скопировано", Toast.LENGTH_SHORT).show()
+            }
+        }
+        binding.btnShareHebrew.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, hebrew)
+                }
+                startActivity(Intent.createChooser(intent, "Поделиться"))
+            }
         }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
         binding.btnSaveCard.setOnClickListener {

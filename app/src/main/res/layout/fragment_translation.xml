@@ -140,6 +140,47 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Hebrew result actions (visible only for Russian→Hebrew) -->
+        <LinearLayout
+            android:id="@+id/hebrewActionsBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/btnSpeakResult"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_speak"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Произнести" />
+
+            <ImageButton
+                android:id="@+id/btnCopyHebrew"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_copy"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Копировать" />
+
+            <ImageButton
+                android:id="@+id/btnShareHebrew"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_share"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Поделиться" />
+
+        </LinearLayout>
+
         <!-- Examples button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExamples"
