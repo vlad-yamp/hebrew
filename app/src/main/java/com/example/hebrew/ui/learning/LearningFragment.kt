@@ -66,8 +66,10 @@ class LearningFragment : Fragment() {
     private fun speakToggle(key: String, text: String) {
         val isSlow = slowKeys.contains(key)
         tts?.setSpeechRate(if (isSlow) 0.5f else 1.0f)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-        if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if (result == TextToSpeech.SUCCESS) {
+            if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+        }
     }
 
     // ── Buttons ──────────────────────────────────────────────────────────────

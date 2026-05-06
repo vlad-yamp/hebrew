@@ -31,14 +31,22 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
 
     private var tts: TextToSpeech? = null
+    private var isTtsReady = false
+    private var pendingSpeak: (() -> Unit)? = null
     private var isFlipped = false
     private val slowKeys = mutableSetOf<String>()
 
     private fun speakToggle(key: String, text: String) {
+        if (!isTtsReady) {
+            pendingSpeak = { speakToggle(key, text) }
+            return
+        }
         val isSlow = slowKeys.contains(key)
         tts?.setSpeechRate(if (isSlow) 0.5f else 1.0f)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
-        if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        if (result == TextToSpeech.SUCCESS) {
+            if (isSlow) slowKeys.remove(key) else slowKeys.add(key)
+        }
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -160,6 +168,9 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.getDefault())
                 }
+                isTtsReady = true
+                pendingSpeak?.invoke()
+                pendingSpeak = null
             }
         }
     }
