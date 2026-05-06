@@ -108,6 +108,16 @@ class TranslationFragment : Fragment() {
                     binding.btnNewInput.visibility = View.GONE
                 }
 
+                is TranslationState.Streaming -> {
+                    binding.progressTranslation.visibility = View.GONE
+                    binding.cardSingleTranslation.visibility = View.VISIBLE
+                    binding.tvSingleTranslation.text = state.partialText
+                    binding.cardVariants.visibility = View.GONE
+                    binding.btnExamples.visibility = View.GONE
+                    binding.btnSaveCard.visibility = View.GONE
+                    binding.btnNewInput.visibility = View.GONE
+                }
+
                 is TranslationState.SingleTranslation -> {
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.VISIBLE

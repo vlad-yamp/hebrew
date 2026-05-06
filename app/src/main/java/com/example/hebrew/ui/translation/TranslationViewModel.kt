@@ -12,7 +12,10 @@ import com.example.hebrew.api.ChatRequest
 import com.example.hebrew.api.OpenAIClient
 import com.example.hebrew.data.Card
 import com.example.hebrew.ui.learning.ExampleItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -68,11 +71,39 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 Русский: $text"""
                 }
 
-                val response = OpenAIClient.service.getCompletion(
-                    auth = "Bearer $apiKey",
-                    request = ChatRequest(messages = listOf(ChatMessage("user", prompt)))
-                )
-                val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
+                val fullText = StringBuilder()
+                withContext(Dispatchers.IO) {
+                    val response = OpenAIClient.service.getCompletionStream(
+                        auth = "Bearer $apiKey",
+                        request = ChatRequest(
+                            messages = listOf(ChatMessage("user", prompt)),
+                            max_tokens = 200,
+                            stream = true
+                        )
+                    )
+                    val body = response.body() ?: throw Exception("Empty response")
+                    body.source().use { source ->
+                        while (!source.exhausted()) {
+                            val line = source.readUtf8Line() ?: break
+                            if (!line.startsWith("data: ")) continue
+                            val data = line.removePrefix("data: ").trim()
+                            if (data == "[DONE]") break
+                            try {
+                                val token = JSONObject(data)
+                                    .getJSONArray("choices")
+                                    .getJSONObject(0)
+                                    .getJSONObject("delta")
+                                    .optString("content", "")
+                                if (token.isNotEmpty()) {
+                                    fullText.append(token)
+                                    _translationState.postValue(TranslationState.Streaming(fullText.toString()))
+                                }
+                            } catch (_: Exception) {}
+                        }
+                    }
+                }
+
+                val content = fullText.toString().trim()
                 val variants = parseVariants(content)
                 if (variants.size > 1) {
                     selectedVariant = variants[0]
@@ -159,6 +190,7 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 sealed class TranslationState {
     object Idle : TranslationState()
     object Loading : TranslationState()
+    data class Streaming(val partialText: String) : TranslationState()
     data class SingleTranslation(val text: String) : TranslationState()
     data class MultipleVariants(val variants: List<String>) : TranslationState()
     data class Error(val message: String) : TranslationState()
