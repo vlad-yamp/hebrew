@@ -85,6 +85,11 @@ class VoiceFragment : Fragment() {
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = false
         }
+        is VoiceState.Translating -> {
+            binding.tvStatus.text = getString(R.string.btn_translating)
+            binding.progressBar.visibility = View.VISIBLE
+            binding.btnMic.isEnabled = false
+        }
         is VoiceState.Error -> {
             binding.tvStatus.text = state.message
             binding.progressBar.visibility = View.GONE
@@ -122,17 +127,18 @@ class VoiceFragment : Fragment() {
             override fun onEndOfSpeech() {}
 
             override fun onResults(results: Bundle?) {
-                viewModel.onIdle()
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
                 if (!text.isNullOrBlank()) {
+                    viewModel.onTranslating()
                     val bundle = Bundle().apply {
                         putString("inputText", text)
                         putBoolean("isHebrewInput", isHebrewInput)
                     }
                     findNavController().navigate(R.id.action_voice_to_translation, bundle)
                 } else {
+                    viewModel.onIdle()
                     Toast.makeText(requireContext(), getString(R.string.error_no_speech), Toast.LENGTH_SHORT).show()
                 }
             }
@@ -152,6 +158,11 @@ class VoiceFragment : Fragment() {
         })
 
         speechRecognizer?.startListening(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.onIdle()
     }
 
     override fun onDestroyView() {

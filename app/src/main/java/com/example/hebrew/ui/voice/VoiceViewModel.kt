@@ -20,6 +20,7 @@ class VoiceViewModel(app: Application) : AndroidViewModel(app) {
     val state: LiveData<VoiceState> = _state
 
     fun onListening() { _state.value = VoiceState.Listening }
+    fun onTranslating() { _state.value = VoiceState.Translating }
     fun onIdle() { _state.value = VoiceState.Idle }
     fun onError(msg: String) { _state.value = VoiceState.Error(msg) }
     fun onErrorHandled() { _state.value = VoiceState.Idle }
@@ -28,5 +29,6 @@ class VoiceViewModel(app: Application) : AndroidViewModel(app) {
 sealed class VoiceState {
     object Idle : VoiceState()
     object Listening : VoiceState()
+    object Translating : VoiceState()
     data class Error(val message: String) : VoiceState()
 }

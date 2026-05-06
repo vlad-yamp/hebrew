@@ -4,7 +4,8 @@
     <string name="tab_cards">Карточки</string>
     <string name="tab_settings">Настройки</string>
     <string name="btn_start_voice">Нажмите для голосового ввода</string>
-    <string name="btn_listening">Слушаю…</string>
+    <string name="btn_listening">Распознавание речи…</string>
+    <string name="btn_translating">Перевод…</string>
     <string name="hint_voice">Скажите слово или фразу на иврите</string>
     <string name="recognized_text">Распознано: %s</string>
     <string name="loading_translation">Перевожу…</string>
