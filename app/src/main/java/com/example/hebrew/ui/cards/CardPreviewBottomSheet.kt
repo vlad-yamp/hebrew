@@ -107,9 +107,10 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
         binding.progressExamples.visibility = View.VISIBLE
         binding.examplesContainer.removeAllViews()
 
+        val examplesCount = prefs.getInt("examples_count", 5)
         scope.launch {
             try {
-                val prompt = """Дай 5 примеров использования слова или фразы «$hebrew» (иврит) в предложениях.
+                val prompt = """Дай $examplesCount примеров использования слова или фразы «$hebrew» (иврит) в предложениях.
 Формат каждого примера:
 [предложение на иврите]
 [перевод на русский]

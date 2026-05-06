@@ -129,10 +129,11 @@ fun markUnknown() {
         val apiKey = prefs.getString("openai_api_key", "") ?: ""
         if (apiKey.isBlank()) return
 
+        val examplesCount = prefs.getInt("examples_count", 5)
         _examplesState.value = ExamplesState.Loading
         viewModelScope.launch {
             try {
-                val prompt = """Дай 5 примеров использования слова или фразы «${card.hebrew}» (иврит) в предложениях.
+                val prompt = """Дай $examplesCount примеров использования слова или фразы «${card.hebrew}» (иврит) в предложениях.
 Формат каждого примера:
 [предложение на иврите]
 [перевод на русский]

@@ -40,15 +40,14 @@
                 android:layout_marginTop="2dp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvKnownCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <ImageButton
+            android:id="@+id/btnSpeak"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:layout_marginStart="8dp"
-            android:textSize="12sp"
-            android:textColor="@color/colorKnown"
-            android:background="@drawable/bg_count_badge"
-            android:padding="4dp" />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_speak"
+            android:contentDescription="Произнести" />
 
         <ImageButton
             android:id="@+id/btnDelete"
