@@ -31,6 +31,9 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     private val _cardSaved = MutableLiveData(false)
     val cardSaved: LiveData<Boolean> = _cardSaved
 
+    private val _duplicateCard = MutableLiveData(false)
+    val duplicateCard: LiveData<Boolean> = _duplicateCard
+
     // inputText — what the user spoke/typed
     // selectedVariant — chosen translation (Russian when isHebrewInput, Hebrew when !isHebrewInput)
     private var inputText: String = ""
@@ -159,12 +162,17 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
         val russian = if (isHebrewInput) selectedVariant else inputText
         if (hebrew.isBlank() || russian.isBlank()) return
         viewModelScope.launch {
+            if (repository.findByHebrew(hebrew) != null) {
+                _duplicateCard.value = true
+                return@launch
+            }
             repository.insert(Card(hebrew = hebrew, russian = russian))
             _cardSaved.value = true
         }
     }
 
     fun onCardSavedHandled() { _cardSaved.value = false }
+    fun onDuplicateHandled() { _duplicateCard.value = false }
 
     private fun parseExamples(content: String): List<ExampleItem> {
         val blocks = content.trim().split(Regex("\\n\\s*\\n"))

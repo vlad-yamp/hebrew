@@ -24,6 +24,9 @@ interface CardDao {
     @Delete
     suspend fun delete(card: Card)
 
+    @Query("SELECT * FROM cards WHERE hebrew = :hebrew LIMIT 1")
+    suspend fun findByHebrew(hebrew: String): Card?
+
     @Query("DELETE FROM cards")
     suspend fun deleteAll()
 

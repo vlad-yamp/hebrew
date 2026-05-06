@@ -39,6 +39,7 @@
     <string name="error_translation">Ошибка перевода. Проверьте API ключ и соединение.</string>
     <string name="error_voice">Ошибка распознавания речи</string>
     <string name="error_no_speech">Речь не распознана. Попробуйте ещё раз.</string>
+    <string name="card_duplicate">Карточка с таким словом уже существует</string>
     <string name="no_learning_cards">Нечего учить — добавьте карточки</string>
     <string name="known_4_times">Вы знаете это слово!</string>
     <string name="session_complete">Раунд завершён! Осталось: %d карточек</string>

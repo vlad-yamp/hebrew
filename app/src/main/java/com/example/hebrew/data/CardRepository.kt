@@ -8,6 +8,8 @@ class CardRepository(private val dao: CardDao) {
 
     suspend fun getLearningCards(threshold: Int): List<Card> = dao.getLearningCards(threshold)
 
+    suspend fun findByHebrew(hebrew: String): Card? = dao.findByHebrew(hebrew)
+
     suspend fun insert(card: Card) = dao.insert(card)
 
     suspend fun update(card: Card) = dao.update(card)

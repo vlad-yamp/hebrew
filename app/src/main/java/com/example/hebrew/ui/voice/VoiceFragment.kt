@@ -61,7 +61,14 @@ class VoiceFragment : Fragment() {
             }
         }
 
-        binding.btnMic.setOnClickListener { checkPermissionAndListen() }
+        binding.btnMic.setOnClickListener {
+            if (viewModel.state.value is VoiceState.Listening) {
+                speechRecognizer?.cancel()
+                viewModel.onIdle()
+            } else {
+                checkPermissionAndListen()
+            }
+        }
         viewModel.state.observe(viewLifecycleOwner) { renderState(it) }
         viewModel.cardCount.observe(viewLifecycleOwner) { count ->
             binding.tvCardCount.text = getString(R.string.card_count, count)
@@ -83,7 +90,7 @@ class VoiceFragment : Fragment() {
         is VoiceState.Listening -> {
             binding.tvStatus.text = getString(R.string.btn_listening)
             binding.progressBar.visibility = View.VISIBLE
-            binding.btnMic.isEnabled = false
+            binding.btnMic.isEnabled = true
         }
         is VoiceState.Translating -> {
             binding.tvStatus.text = getString(R.string.btn_translating)

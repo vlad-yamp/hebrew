@@ -173,6 +173,13 @@ class TranslationFragment : Fragment() {
                 findNavController().popBackStack()
             }
         }
+
+        viewModel.duplicateCard.observe(viewLifecycleOwner) { duplicate ->
+            if (duplicate) {
+                viewModel.onDuplicateHandled()
+                Toast.makeText(requireContext(), getString(R.string.card_duplicate), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun speakToggle(key: String, text: String) {
