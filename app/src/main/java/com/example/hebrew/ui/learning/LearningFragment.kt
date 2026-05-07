@@ -107,6 +107,10 @@ class LearningFragment : Fragment() {
             val id = if (mode == LearningMode.MEMORIZE) R.id.btnModeMemorize else R.id.btnModeReview
             if (binding.toggleMode.checkedButtonId != id) binding.toggleMode.check(id)
         }
+
+        viewModel.memorizedCount.observe(viewLifecycleOwner) { count ->
+            binding.tvMemorized.text = if (count > 0) getString(R.string.memorized_count, count) else ""
+        }
     }
 
     // ── Observers ─────────────────────────────────────────────────────────────

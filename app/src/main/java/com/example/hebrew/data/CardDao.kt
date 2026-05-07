@@ -24,6 +24,9 @@ interface CardDao {
     @Delete
     suspend fun delete(card: Card)
 
+    @Query("SELECT COUNT(*) FROM cards WHERE knownCount >= :threshold")
+    suspend fun getMemorizedCount(threshold: Int): Int
+
     @Query("SELECT * FROM cards WHERE hebrew = :hebrew LIMIT 1")
     suspend fun findByHebrew(hebrew: String): Card?
 

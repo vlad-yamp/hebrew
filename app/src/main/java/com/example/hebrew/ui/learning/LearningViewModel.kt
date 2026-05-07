@@ -29,6 +29,9 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private val _examplesState = MutableLiveData<ExamplesState>(ExamplesState.Idle)
     val examplesState: LiveData<ExamplesState> = _examplesState
 
+    private val _memorizedCount = MutableLiveData(0)
+    val memorizedCount: LiveData<Int> = _memorizedCount
+
     private val _mode = MutableLiveData(
         if (prefs.getBoolean("learning_mode_memorize", true)) LearningMode.MEMORIZE
         else LearningMode.REVIEW
@@ -46,6 +49,12 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun threshold() = prefs.getInt("repetitions_count", 4)
 
+    private fun refreshMemorizedCount() {
+        viewModelScope.launch {
+            _memorizedCount.value = repository.getMemorizedCount(threshold())
+        }
+    }
+
     init { loadSession() }
 
     // ── Mode switching ────────────────────────────────────────────────────────
@@ -58,6 +67,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         clearSession()
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
+            refreshMemorizedCount()
             if (allCards.isEmpty()) { _state.value = LearningState.AllLearned; return@launch }
             if (mode == LearningMode.MEMORIZE) startMemorizeSession() else startReviewSession()
         }
@@ -68,6 +78,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private fun loadSession() {
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
+            refreshMemorizedCount()
             if (allCards.isEmpty()) { _state.value = LearningState.AllLearned; return@launch }
 
             if (_mode.value == LearningMode.MEMORIZE) {
@@ -106,6 +117,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private fun reloadAfterRound() {
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
+            refreshMemorizedCount()
             if (allCards.isEmpty()) { clearSession(); _state.value = LearningState.AllLearned }
             else startReviewSession()
         }
@@ -140,14 +152,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refillMemorizeActive() {
-        // Keep the weakest cards from current active set
-        val currentActive = allCards.filter { it.id in memorizeActiveIds }
-        val keepCount = BATCH_SIZE - NEW_PER_ROUND
-        val keepIds = currentActive.sortedBy { it.knownCount }.take(keepCount).map { it.id }.toSet()
-        memorizeActiveIds.clear()
-        memorizeActiveIds.addAll(keepIds)
-
-        // Add new cards from pool, skipping already-learned ones
+        // Only add new cards — never remove unlearned ones from the active set
         var added = 0
         while (memorizePoolIndex < memorizePool.size && added < NEW_PER_ROUND) {
             val card = memorizePool[memorizePoolIndex++]
@@ -161,13 +166,19 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private fun rebuildMemorizeRound() {
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
+            refreshMemorizedCount()
             if (allCards.isEmpty()) { clearSession(); _state.value = LearningState.AllLearned; return@launch }
 
             // Remove graduated cards from active set
             memorizeActiveIds.removeAll { id -> allCards.none { it.id == id } }
 
-            // Refill from pool if there are cards left
-            if (memorizePoolIndex < memorizePool.size) refillMemorizeActive()
+            if (memorizePoolIndex < memorizePool.size) {
+                // Pool not exhausted — introduce new words gradually
+                refillMemorizeActive()
+            } else {
+                // Pool exhausted — make sure every remaining unlearned word is in the active set
+                allCards.forEach { memorizeActiveIds.add(it.id) }
+            }
 
             buildMemorizeQueue()
         }
@@ -200,6 +211,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
             val updated = card.copy(knownCount = card.knownCount + 1)
             repository.update(updated)
             allCards = allCards.map { if (it.id == updated.id) updated else it }
+            if (updated.knownCount >= threshold()) refreshMemorizedCount()
             advanceAndShow()
         }
     }
@@ -261,6 +273,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.resetAllKnownCounts()
             allCards = repository.getLearningCards(threshold())
+            refreshMemorizedCount()
             clearSession()
             memorizeActiveIds.clear()
             memorizePoolIndex = 0

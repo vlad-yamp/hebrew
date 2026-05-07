@@ -47,6 +47,7 @@
     <string name="swipe_hint">← Не знаю | Знаю →</string>
     <string name="btn_new_input">Новый ввод</string>
     <string name="btn_restart_all">Начать заново</string>
+    <string name="memorized_count">Запомнено: %d</string>
     <string name="mode_memorize">Запоминание</string>
     <string name="mode_review">Повторение</string>
     <string name="confirm_restart_all">Сбросить прогресс всех карточек?</string>

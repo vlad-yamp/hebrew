@@ -17,20 +17,20 @@
         <FrameLayout
             android:id="@+id/cardContainer"
             android:layout_width="match_parent"
-            android:layout_height="130dp">
+            android:layout_height="wrap_content">
 
             <!-- Front: Hebrew -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardFront"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="6dp"
                 app:cardBackgroundColor="@color/colorCardFront">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
                     android:padding="16dp">
@@ -43,7 +43,10 @@
                         android:textStyle="bold"
                         android:textColor="@color/colorPrimary"
                         android:gravity="center"
-                        android:textDirection="rtl" />
+                        android:textDirection="rtl"
+                        android:autoSizeTextType="uniform"
+                        android:autoSizeMinTextSize="14sp"
+                        android:autoSizeMaxTextSize="28sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -59,7 +62,7 @@
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardBack"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:visibility="gone"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="6dp"
@@ -67,7 +70,7 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
                     android:padding="16dp">
