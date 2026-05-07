@@ -1,5 +1,6 @@
 package com.example.hebrew.ui.cards
 
+import android.content.Context
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
@@ -8,10 +9,13 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.hebrew.R
+import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.databinding.FragmentCardListBinding
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class CardListFragment : Fragment() {
@@ -38,6 +42,16 @@ class CardListFragment : Fragment() {
         },
         onSpeakClick = { card ->
             speakToggle(card.id.toString(), card.hebrew)
+        },
+        onTransliterateClick = { card, onResult ->
+            val apiKey = requireContext()
+                .getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+                .getString("openai_api_key", "") ?: ""
+            if (apiKey.isBlank()) return@CardAdapter
+            lifecycleScope.launch {
+                runCatching { TransliterationHelper.transliterate(apiKey, card.hebrew) }
+                    .onSuccess { onResult(it) }
+            }
         },
         onDeleteClick = { card ->
             viewModel.deleteCard(card)

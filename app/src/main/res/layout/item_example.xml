@@ -33,6 +33,15 @@
                 android:paddingEnd="8dp" />
 
             <ImageButton
+                android:id="@+id/btnTransliterateExample"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_transliterate"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Транслитерация" />
+
+            <ImageButton
                 android:id="@+id/btnSpeakExample"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
@@ -41,6 +50,16 @@
                 android:tint="@color/colorPrimary"
                 android:contentDescription="Озвучить" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTransliterationExample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/grey_medium"
+            android:fontFamily="monospace"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
 
         <View
             android:layout_width="match_parent"

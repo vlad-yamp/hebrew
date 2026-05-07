@@ -1,6 +1,7 @@
 package com.example.hebrew.ui.cards
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -11,6 +12,7 @@ import com.example.hebrew.databinding.ItemCardBinding
 class CardAdapter(
     private val onCardClick: (Card) -> Unit,
     private val onSpeakClick: (Card) -> Unit,
+    private val onTransliterateClick: (Card, (String) -> Unit) -> Unit,
     private val onDeleteClick: (Card) -> Unit
 ) : ListAdapter<Card, CardAdapter.CardViewHolder>(DiffCallback) {
 
@@ -25,8 +27,24 @@ class CardAdapter(
         fun bind(card: Card) {
             binding.tvHebrewCard.text = card.hebrew
             binding.tvRussianCard.text = card.russian
+            binding.tvTransliteration.visibility = View.GONE
+            binding.tvTransliteration.text = ""
             binding.root.setOnClickListener { onCardClick(card) }
             binding.btnSpeak.setOnClickListener { onSpeakClick(card) }
+            binding.btnTransliterate.setOnClickListener {
+                if (binding.tvTransliteration.visibility == View.VISIBLE) {
+                    binding.tvTransliteration.visibility = View.GONE
+                    return@setOnClickListener
+                }
+                if (binding.tvTransliteration.text.isNotEmpty()) {
+                    binding.tvTransliteration.visibility = View.VISIBLE
+                    return@setOnClickListener
+                }
+                onTransliterateClick(card) { result ->
+                    binding.tvTransliteration.text = result
+                    binding.tvTransliteration.visibility = View.VISIBLE
+                }
+            }
             binding.btnDelete.setOnClickListener { onDeleteClick(card) }
         }
     }

@@ -3,6 +3,7 @@ package com.example.hebrew.ui.learning
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.Context
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.view.GestureDetector
@@ -13,9 +14,12 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.hebrew.R
+import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.databinding.FragmentLearningBinding
 import com.example.hebrew.databinding.ItemExampleBinding
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
 
@@ -86,6 +90,10 @@ class LearningFragment : Fragment() {
             val card = (viewModel.state.value as? LearningState.ShowCard)?.card ?: return@setOnClickListener
             speakToggle("main", card.hebrew)
         }
+        binding.btnTransliterate.setOnClickListener {
+            val card = (viewModel.state.value as? LearningState.ShowCard)?.card ?: return@setOnClickListener
+            transliterateToggle(binding.tvTransliteration, card.hebrew)
+        }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
     }
 
@@ -117,6 +125,8 @@ class LearningFragment : Fragment() {
                         getString(R.string.learning_progress, state.current, state.total)
                     binding.tvHebrewWord.text = state.card.hebrew
                     binding.tvRussianWord.text = state.card.russian
+                    binding.tvTransliteration.visibility = View.GONE
+                    binding.tvTransliteration.text = ""
                     if (state.isFlipped) showBack() else showFront()
                 }
             }
@@ -144,6 +154,19 @@ class LearningFragment : Fragment() {
         }
     }
 
+    private fun transliterateToggle(tv: android.widget.TextView, hebrewText: String) {
+        if (tv.visibility == View.VISIBLE) { tv.visibility = View.GONE; return }
+        if (tv.text.isNotEmpty()) { tv.visibility = View.VISIBLE; return }
+        val apiKey = requireContext()
+            .getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+            .getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            runCatching { TransliterationHelper.transliterate(apiKey, hebrewText) }
+                .onSuccess { tv.text = it; tv.visibility = View.VISIBLE }
+        }
+    }
+
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
         examples.forEachIndexed { index, item ->
@@ -153,6 +176,9 @@ class LearningFragment : Fragment() {
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
             itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
+            itemBinding.btnTransliterateExample.setOnClickListener {
+                transliterateToggle(itemBinding.tvTransliterationExample, item.hebrew)
+            }
             binding.examplesContainer.addView(itemBinding.root)
         }
         // Scroll to show examples

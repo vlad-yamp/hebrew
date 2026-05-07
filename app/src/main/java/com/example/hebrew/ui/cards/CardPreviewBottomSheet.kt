@@ -12,6 +12,7 @@ import android.widget.Toast
 import com.example.hebrew.api.ChatMessage
 import com.example.hebrew.api.ChatRequest
 import com.example.hebrew.api.OpenAIClient
+import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.data.Card
 import com.example.hebrew.databinding.BottomSheetCardPreviewBinding
 import com.example.hebrew.databinding.ItemExampleBinding
@@ -84,6 +85,10 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
             speakToggle("main", hebrew)
         }
 
+        binding.btnTransliterate.setOnClickListener {
+            transliterateToggle(binding.tvTransliteration, hebrew)
+        }
+
         binding.btnExamples.setOnClickListener {
             loadExamples(hebrew)
         }
@@ -146,6 +151,19 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
+    private fun transliterateToggle(tv: android.widget.TextView, hebrewText: String) {
+        if (tv.visibility == View.VISIBLE) { tv.visibility = View.GONE; return }
+        if (tv.text.isNotEmpty()) { tv.visibility = View.VISIBLE; return }
+        val apiKey = requireContext()
+            .getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+            .getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) return
+        scope.launch {
+            runCatching { TransliterationHelper.transliterate(apiKey, hebrewText) }
+                .onSuccess { tv.text = it; tv.visibility = View.VISIBLE }
+        }
+    }
+
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
         examples.forEachIndexed { index, item ->
@@ -155,6 +173,9 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
             itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
+            itemBinding.btnTransliterateExample.setOnClickListener {
+                transliterateToggle(itemBinding.tvTransliterationExample, item.hebrew)
+            }
             binding.examplesContainer.addView(itemBinding.root)
         }
     }

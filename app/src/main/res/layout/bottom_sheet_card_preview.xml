@@ -91,7 +91,7 @@
             </androidx.cardview.widget.CardView>
         </FrameLayout>
 
-        <!-- Action buttons: TTS + Examples -->
+        <!-- Action buttons: TTS + Transliterate + Examples -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -99,13 +99,25 @@
             android:gravity="center"
             android:layout_marginTop="12dp">
 
-            <com.google.android.material.button.MaterialButton
+            <ImageButton
                 android:id="@+id/btnSpeak"
-                android:layout_width="wrap_content"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_speak"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Произнести" />
+
+            <ImageButton
+                android:id="@+id/btnTransliterate"
+                android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_marginEnd="12dp"
-                android:text="@string/btn_speak"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_transliterate"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Транслитерация" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExamples"
@@ -114,6 +126,17 @@
                 android:text="@string/btn_examples"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTransliteration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/grey_medium"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
 
         <!-- Examples loading -->
         <ProgressBar

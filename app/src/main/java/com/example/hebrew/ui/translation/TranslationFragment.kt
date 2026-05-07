@@ -14,11 +14,14 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.hebrew.R
+import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.databinding.FragmentTranslationBinding
 import com.example.hebrew.databinding.ItemExampleBinding
 import com.example.hebrew.ui.learning.ExampleItem
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 class TranslationFragment : Fragment() {
@@ -66,6 +69,7 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_LOCALE
             binding.tvSingleTranslation.gravity = Gravity.START
             binding.btnSpeakHebrew.visibility = View.VISIBLE
+            binding.btnTransliterateHebrew.visibility = View.VISIBLE
             binding.hebrewActionsBar.visibility = View.GONE
         } else {
             binding.tvInputLabel.text = "Русский"
@@ -75,6 +79,7 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_RTL
             binding.tvSingleTranslation.gravity = Gravity.END
             binding.btnSpeakHebrew.visibility = View.GONE
+            binding.btnTransliterateHebrew.visibility = View.GONE
             binding.hebrewActionsBar.visibility = View.GONE
         }
     }
@@ -106,6 +111,10 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
+                    binding.tvTransliterationInput.visibility = View.GONE
+                    binding.tvTransliterationInput.text = ""
+                    binding.tvTransliterationResult.visibility = View.GONE
+                    binding.tvTransliterationResult.text = ""
                 }
 
                 is TranslationState.Streaming -> {
@@ -191,6 +200,19 @@ class TranslationFragment : Fragment() {
         }
     }
 
+    private fun transliterateToggle(tv: android.widget.TextView, hebrewText: String) {
+        if (tv.visibility == View.VISIBLE) { tv.visibility = View.GONE; return }
+        if (tv.text.isNotEmpty()) { tv.visibility = View.VISIBLE; return }
+        val apiKey = requireContext()
+            .getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+            .getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            runCatching { TransliterationHelper.transliterate(apiKey, hebrewText) }
+                .onSuccess { tv.text = it; tv.visibility = View.VISIBLE }
+        }
+    }
+
     private fun showExamples(examples: List<ExampleItem>) {
         binding.examplesContainer.removeAllViews()
         examples.forEachIndexed { index, item ->
@@ -200,6 +222,9 @@ class TranslationFragment : Fragment() {
             itemBinding.tvExampleHebrew.text = item.hebrew
             itemBinding.tvExampleRussian.text = item.russian
             itemBinding.btnSpeakExample.setOnClickListener { speakToggle("ex_$index", item.hebrew) }
+            itemBinding.btnTransliterateExample.setOnClickListener {
+                transliterateToggle(itemBinding.tvTransliterationExample, item.hebrew)
+            }
             binding.examplesContainer.addView(itemBinding.root)
         }
     }
@@ -209,9 +234,17 @@ class TranslationFragment : Fragment() {
             val hebrew = viewModel.currentHebrew
             if (hebrew.isNotBlank()) speakToggle("input", hebrew)
         }
+        binding.btnTransliterateHebrew.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) transliterateToggle(binding.tvTransliterationInput, hebrew)
+        }
         binding.btnSpeakResult.setOnClickListener {
             val hebrew = viewModel.currentHebrew
             if (hebrew.isNotBlank()) speakToggle("result", hebrew)
+        }
+        binding.btnTransliterateResult.setOnClickListener {
+            val hebrew = viewModel.currentHebrew
+            if (hebrew.isNotBlank()) transliterateToggle(binding.tvTransliterationResult, hebrew)
         }
         binding.btnCopyHebrew.setOnClickListener {
             val hebrew = viewModel.currentHebrew

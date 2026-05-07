@@ -43,6 +43,16 @@
                         android:textAllCaps="true" />
 
                     <ImageButton
+                        android:id="@+id/btnTransliterateHebrew"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_transliterate"
+                        android:tint="@color/colorPrimary"
+                        android:contentDescription="Транслитерация"
+                        android:visibility="gone" />
+
+                    <ImageButton
                         android:id="@+id/btnSpeakHebrew"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
@@ -52,6 +62,16 @@
                         android:contentDescription="Озвучить"
                         android:visibility="gone" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvTransliterationInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="@color/grey_medium"
+                    android:fontFamily="monospace"
+                    android:layout_marginTop="4dp"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvHebrewPhrase"
@@ -160,6 +180,15 @@
                 android:contentDescription="Произнести" />
 
             <ImageButton
+                android:id="@+id/btnTransliterateResult"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_transliterate"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="Транслитерация" />
+
+            <ImageButton
                 android:id="@+id/btnCopyHebrew"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -180,6 +209,17 @@
                 android:contentDescription="Поделиться" />
 
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTransliterationResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/grey_medium"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
 
         <!-- Examples button -->
         <com.google.android.material.button.MaterialButton
