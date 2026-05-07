@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -26,6 +27,7 @@ class VoiceFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: VoiceViewModel by viewModels()
     private var speechRecognizer: SpeechRecognizer? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private var isHebrewInput = true
     private val prefs by lazy {
         requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
@@ -64,6 +66,7 @@ class VoiceFragment : Fragment() {
         binding.btnMic.setOnClickListener {
             if (viewModel.state.value is VoiceState.Listening) {
                 speechRecognizer?.cancel()
+                releaseWakeLock()
                 viewModel.onIdle()
             } else {
                 checkPermissionAndListen()
@@ -113,9 +116,32 @@ class VoiceFragment : Fragment() {
         else requestPermission.launch(Manifest.permission.RECORD_AUDIO)
     }
 
+    private fun acquireWakeLock() {
+        val pm = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Hebrew:SpeechRecognition")
+        wakeLock?.acquire(60_000L)
+    }
+
+    private fun releaseWakeLock() {
+        if (wakeLock?.isHeld == true) wakeLock?.release()
+        wakeLock = null
+    }
+
+    @Suppress("DEPRECATION")
+    private fun wakeScreen() {
+        val pm = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
+        val wl = pm.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "Hebrew:WakeScreen"
+        )
+        wl.acquire(3000L)
+        wl.release()
+    }
+
     private fun startListening() {
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+        acquireWakeLock()
 
         val locale = if (isHebrewInput) "iw-IL" else "ru-RU"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -134,6 +160,8 @@ class VoiceFragment : Fragment() {
             override fun onEndOfSpeech() {}
 
             override fun onResults(results: Bundle?) {
+                releaseWakeLock()
+                wakeScreen()
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
@@ -151,6 +179,7 @@ class VoiceFragment : Fragment() {
             }
 
             override fun onError(error: Int) {
+                releaseWakeLock()
                 viewModel.onIdle()
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH,
@@ -173,6 +202,7 @@ class VoiceFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        releaseWakeLock()
         super.onDestroyView()
         speechRecognizer?.destroy()
         speechRecognizer = null
