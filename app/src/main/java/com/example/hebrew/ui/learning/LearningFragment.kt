@@ -17,6 +17,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.hebrew.R
 import com.example.hebrew.api.TransliterationHelper
+import com.example.hebrew.ui.learning.LearningMode
 import com.example.hebrew.databinding.FragmentLearningBinding
 import com.example.hebrew.databinding.ItemExampleBinding
 import kotlinx.coroutines.launch
@@ -95,6 +96,17 @@ class LearningFragment : Fragment() {
             transliterateToggle(binding.tvTransliteration, card.hebrew)
         }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
+
+        binding.toggleMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val mode = if (checkedId == R.id.btnModeMemorize) LearningMode.MEMORIZE else LearningMode.REVIEW
+            viewModel.setMode(mode)
+        }
+
+        viewModel.mode.observe(viewLifecycleOwner) { mode ->
+            val id = if (mode == LearningMode.MEMORIZE) R.id.btnModeMemorize else R.id.btnModeReview
+            if (binding.toggleMode.checkedButtonId != id) binding.toggleMode.check(id)
+        }
     }
 
     // ── Observers ─────────────────────────────────────────────────────────────
