@@ -59,12 +59,12 @@ class TranslationFragment : Fragment() {
     }
 
     private fun applyInputLanguage() {
-        binding.tvHebrewPhrase.text = inputText
+        binding.etInputText.setText(inputText)
 
         if (isHebrewInput) {
             binding.tvInputLabel.text = "Иврит"
-            binding.tvHebrewPhrase.textDirection = View.TEXT_DIRECTION_RTL
-            binding.tvHebrewPhrase.gravity = Gravity.END
+            binding.etInputText.textDirection = View.TEXT_DIRECTION_RTL
+            binding.etInputText.gravity = Gravity.END
             binding.tvTranslationLabel.text = "Перевод"
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_LOCALE
             binding.tvSingleTranslation.gravity = Gravity.START
@@ -73,8 +73,8 @@ class TranslationFragment : Fragment() {
             binding.hebrewActionsBar.visibility = View.GONE
         } else {
             binding.tvInputLabel.text = "Русский"
-            binding.tvHebrewPhrase.textDirection = View.TEXT_DIRECTION_LOCALE
-            binding.tvHebrewPhrase.gravity = Gravity.START
+            binding.etInputText.textDirection = View.TEXT_DIRECTION_LOCALE
+            binding.etInputText.gravity = Gravity.START
             binding.tvTranslationLabel.text = "Иврит"
             binding.tvSingleTranslation.textDirection = View.TEXT_DIRECTION_RTL
             binding.tvSingleTranslation.gravity = Gravity.END
@@ -104,6 +104,8 @@ class TranslationFragment : Fragment() {
                 is TranslationState.Idle -> {}
 
                 is TranslationState.Loading -> {
+                    binding.btnRetranslate.isEnabled = false
+                    binding.btnRetranslate.alpha = 0.3f
                     binding.progressTranslation.visibility = View.VISIBLE
                     binding.cardSingleTranslation.visibility = View.GONE
                     binding.cardVariants.visibility = View.GONE
@@ -111,6 +113,8 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
+                    binding.progressExamples.visibility = View.GONE
+                    binding.examplesContainer.removeAllViews()
                     binding.tvTransliterationInput.visibility = View.GONE
                     binding.tvTransliterationInput.text = ""
                     binding.tvTransliterationResult.visibility = View.GONE
@@ -118,6 +122,8 @@ class TranslationFragment : Fragment() {
                 }
 
                 is TranslationState.Streaming -> {
+                    binding.btnRetranslate.isEnabled = false
+                    binding.btnRetranslate.alpha = 0.3f
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.VISIBLE
                     binding.tvSingleTranslation.text = state.partialText
@@ -128,6 +134,8 @@ class TranslationFragment : Fragment() {
                 }
 
                 is TranslationState.SingleTranslation -> {
+                    binding.btnRetranslate.isEnabled = true
+                    binding.btnRetranslate.alpha = 1f
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.VISIBLE
                     binding.tvSingleTranslation.text = state.text
@@ -139,6 +147,8 @@ class TranslationFragment : Fragment() {
                 }
 
                 is TranslationState.MultipleVariants -> {
+                    binding.btnRetranslate.isEnabled = true
+                    binding.btnRetranslate.alpha = 1f
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.GONE
                     binding.cardVariants.visibility = View.VISIBLE
@@ -150,6 +160,8 @@ class TranslationFragment : Fragment() {
                 }
 
                 is TranslationState.Error -> {
+                    binding.btnRetranslate.isEnabled = true
+                    binding.btnRetranslate.alpha = 1f
                     binding.progressTranslation.visibility = View.GONE
                     Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
                     binding.btnNewInput.visibility = View.VISIBLE
@@ -230,13 +242,17 @@ class TranslationFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnRetranslate.setOnClickListener {
+            val text = binding.etInputText.text.toString().trim()
+            if (text.isNotBlank()) viewModel.translate(text, isHebrewInput)
+        }
         binding.btnSpeakHebrew.setOnClickListener {
-            val hebrew = viewModel.currentHebrew
-            if (hebrew.isNotBlank()) speakToggle("input", hebrew)
+            val text = binding.etInputText.text.toString().trim()
+            if (text.isNotBlank()) speakToggle("input", text)
         }
         binding.btnTransliterateHebrew.setOnClickListener {
-            val hebrew = viewModel.currentHebrew
-            if (hebrew.isNotBlank()) transliterateToggle(binding.tvTransliterationInput, hebrew)
+            val text = binding.etInputText.text.toString().trim()
+            if (text.isNotBlank()) transliterateToggle(binding.tvTransliterationInput, text)
         }
         binding.btnSpeakResult.setOnClickListener {
             val hebrew = viewModel.currentHebrew
