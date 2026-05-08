@@ -70,6 +70,8 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.gravity = Gravity.START
             binding.btnSpeakHebrew.visibility = View.VISIBLE
             binding.btnTransliterateHebrew.visibility = View.VISIBLE
+            binding.btnConjugate.visibility = View.VISIBLE
+            binding.btnSyntax.visibility = View.VISIBLE
             binding.hebrewActionsBar.visibility = View.GONE
         } else {
             binding.tvInputLabel.text = "Русский"
@@ -80,6 +82,8 @@ class TranslationFragment : Fragment() {
             binding.tvSingleTranslation.gravity = Gravity.END
             binding.btnSpeakHebrew.visibility = View.GONE
             binding.btnTransliterateHebrew.visibility = View.GONE
+            binding.btnConjugate.visibility = View.GONE
+            binding.btnSyntax.visibility = View.GONE
             binding.hebrewActionsBar.visibility = View.GONE
         }
     }
@@ -115,6 +119,7 @@ class TranslationFragment : Fragment() {
                     binding.btnNewInput.visibility = View.GONE
                     binding.progressExamples.visibility = View.GONE
                     binding.examplesContainer.removeAllViews()
+                    binding.progressAnalysis.visibility = View.GONE
                     binding.tvTransliterationInput.visibility = View.GONE
                     binding.tvTransliterationInput.text = ""
                     binding.tvTransliterationResult.visibility = View.GONE
@@ -182,6 +187,21 @@ class TranslationFragment : Fragment() {
                 }
                 is ExamplesState.Error -> {
                     binding.progressExamples.visibility = View.GONE
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        viewModel.analysisState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is AnalysisState.Idle -> binding.progressAnalysis.visibility = View.GONE
+                is AnalysisState.Loading -> binding.progressAnalysis.visibility = View.VISIBLE
+                is AnalysisState.Done -> {
+                    binding.progressAnalysis.visibility = View.GONE
+                    showAnalysisSheet(state.type, state.text)
+                }
+                is AnalysisState.Error -> {
+                    binding.progressAnalysis.visibility = View.GONE
                     Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -280,6 +300,10 @@ class TranslationFragment : Fragment() {
                 startActivity(Intent.createChooser(intent, "Поделиться"))
             }
         }
+        binding.btnConjugate.setOnClickListener { onConjugateClick() }
+        binding.btnConjugateResult.setOnClickListener { onConjugateClick() }
+        binding.btnSyntax.setOnClickListener { onSyntaxClick() }
+        binding.btnSyntaxResult.setOnClickListener { onSyntaxClick() }
         binding.btnExamples.setOnClickListener { viewModel.loadExamples() }
         binding.btnSaveCard.setOnClickListener {
             val checked = binding.radioGroupVariants.checkedRadioButtonId
@@ -294,6 +318,29 @@ class TranslationFragment : Fragment() {
             viewModel.saveCard()
         }
         binding.btnNewInput.setOnClickListener { findNavController().popBackStack() }
+    }
+
+    private fun onConjugateClick() {
+        val s = viewModel.analysisState.value
+        if (s is AnalysisState.Loading) return
+        if (s is AnalysisState.Done && s.type == "conj") showAnalysisSheet(s.type, s.text)
+        else viewModel.loadConjugation()
+    }
+
+    private fun onSyntaxClick() {
+        val s = viewModel.analysisState.value
+        if (s is AnalysisState.Loading) return
+        if (s is AnalysisState.Done && s.type == "syntax") showAnalysisSheet(s.type, s.text)
+        else viewModel.loadSyntaxAnalysis()
+    }
+
+    private fun showAnalysisSheet(type: String, content: String) {
+        val title = getString(
+            if (type == "conj") R.string.analysis_conjugation_title
+            else R.string.analysis_syntax_title
+        )
+        AnalysisBottomSheet.newInstance(title, content)
+            .show(childFragmentManager, "analysis")
     }
 
     private fun populateVariants(variants: List<String>) {

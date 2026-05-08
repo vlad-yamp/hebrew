@@ -28,6 +28,9 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     private val _examplesState = MutableLiveData<ExamplesState>(ExamplesState.Idle)
     val examplesState: LiveData<ExamplesState> = _examplesState
 
+    private val _analysisState = MutableLiveData<AnalysisState>(AnalysisState.Idle)
+    val analysisState: LiveData<AnalysisState> = _analysisState
+
     private val _cardSaved = MutableLiveData(false)
     val cardSaved: LiveData<Boolean> = _cardSaved
 
@@ -48,6 +51,7 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
         this.isHebrewInput = isHebrewInput
         this.inputText = text
         this.selectedVariant = ""
+        _analysisState.value = AnalysisState.Idle
 
         val apiKey = prefs.getString("openai_api_key", "") ?: ""
         if (apiKey.isBlank()) {
@@ -175,6 +179,39 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     fun onCardSavedHandled() { _cardSaved.value = false }
     fun onDuplicateHandled() { _duplicateCard.value = false }
 
+    fun loadConjugation() = loadAnalysis("conj")
+    fun loadSyntaxAnalysis() = loadAnalysis("syntax")
+    fun clearAnalysis() { _analysisState.value = AnalysisState.Idle }
+
+    private fun loadAnalysis(type: String) {
+        val hebrew = currentHebrew
+        if (hebrew.isBlank()) return
+        val apiKey = prefs.getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) return
+
+        _analysisState.value = AnalysisState.Loading
+        viewModelScope.launch {
+            try {
+                val prompt = if (type == "conj") {
+                    """В фразе на иврите «$hebrew» найди все глаголы. Для каждого глагола отдельно проспрягай его во ВСЕХ временах: прошедшее (עבר), настоящее (הווה), будущее (עתיד) и повелительное (ציווי) — по всем лицам и числам. Для каждой формы укажи форму на иврите и транслитерацию русскими буквами в скобках. Используй маркированный список, без таблиц. Ответ на русском языке."""
+                } else {
+                    """Сделай синтаксический разбор фразы на иврите «$hebrew»: для каждого слова укажи само слово на иврите, его перевод на русский, часть речи и синтаксическую функцию в предложении. Оформи как нумерованный список. Ответ на русском языке."""
+                }
+                val response = OpenAIClient.service.getCompletion(
+                    auth = "Bearer $apiKey",
+                    request = ChatRequest(
+                        messages = listOf(ChatMessage("user", prompt)),
+                        max_tokens = 800
+                    )
+                )
+                val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
+                _analysisState.value = AnalysisState.Done(type, content)
+            } catch (e: Exception) {
+                _analysisState.value = AnalysisState.Error(e.message ?: "Ошибка")
+            }
+        }
+    }
+
     private fun parseExamples(content: String): List<ExampleItem> {
         val blocks = content.trim().split(Regex("\\n\\s*\\n"))
         return blocks.mapNotNull { block ->
@@ -203,6 +240,13 @@ sealed class TranslationState {
     data class SingleTranslation(val text: String) : TranslationState()
     data class MultipleVariants(val variants: List<String>) : TranslationState()
     data class Error(val message: String) : TranslationState()
+}
+
+sealed class AnalysisState {
+    object Idle : AnalysisState()
+    object Loading : AnalysisState()
+    data class Done(val type: String, val text: String) : AnalysisState()
+    data class Error(val message: String) : AnalysisState()
 }
 
 sealed class ExamplesState {

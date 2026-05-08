@@ -53,6 +53,26 @@
                         android:visibility="gone" />
 
                     <ImageButton
+                        android:id="@+id/btnConjugate"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_conjugate"
+                        android:tint="@color/colorPrimary"
+                        android:contentDescription="@string/analysis_conjugation_title"
+                        android:visibility="gone" />
+
+                    <ImageButton
+                        android:id="@+id/btnSyntax"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_syntax"
+                        android:tint="@color/colorPrimary"
+                        android:contentDescription="@string/analysis_syntax_title"
+                        android:visibility="gone" />
+
+                    <ImageButton
                         android:id="@+id/btnSpeakHebrew"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
@@ -204,6 +224,24 @@
                 android:contentDescription="Транслитерация" />
 
             <ImageButton
+                android:id="@+id/btnConjugateResult"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_conjugate"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="@string/analysis_conjugation_title" />
+
+            <ImageButton
+                android:id="@+id/btnSyntaxResult"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_syntax"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="@string/analysis_syntax_title" />
+
+            <ImageButton
                 android:id="@+id/btnCopyHebrew"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -233,6 +271,15 @@
             android:textColor="@color/grey_medium"
             android:fontFamily="monospace"
             android:gravity="center"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
+        <!-- Analysis loading -->
+        <ProgressBar
+            android:id="@+id/progressAnalysis"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_marginBottom="8dp"
             android:visibility="gone" />
 
