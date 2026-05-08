@@ -1,9 +1,11 @@
 package com.example.hebrew.ui.voice
 
 import android.Manifest
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.PowerManager
 import android.speech.RecognitionListener
@@ -23,12 +25,16 @@ import com.example.hebrew.databinding.FragmentVoiceBinding
 
 class VoiceFragment : Fragment() {
 
+    private enum class InputMode { MIC, TEXT }
+
     private var _binding: FragmentVoiceBinding? = null
     private val binding get() = _binding!!
     private val viewModel: VoiceViewModel by viewModels()
     private var speechRecognizer: SpeechRecognizer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var isHebrewInput = true
+    private var inputMode = InputMode.MIC
+
     private val prefs by lazy {
         requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
     }
@@ -51,7 +57,6 @@ class VoiceFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         isHebrewInput = prefs.getBoolean("default_lang_hebrew", true)
-
         binding.langToggle.check(if (isHebrewInput) R.id.btnLangHebrew else R.id.btnLangRussian)
         updateHint()
 
@@ -72,9 +77,54 @@ class VoiceFragment : Fragment() {
                 checkPermissionAndListen()
             }
         }
+
+        binding.btnInputMic.setOnClickListener { setInputMode(InputMode.MIC) }
+        binding.btnInputKeyboard.setOnClickListener { setInputMode(InputMode.TEXT) }
+
+        binding.btnInputClipboard.setOnClickListener {
+            val cm = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val text = cm.primaryClip?.getItemAt(0)?.text?.toString()?.trim() ?: ""
+            if (text.isBlank()) {
+                Toast.makeText(requireContext(), getString(R.string.clipboard_empty), Toast.LENGTH_SHORT).show()
+            } else {
+                navigateToTranslation(text)
+            }
+        }
+
+        binding.btnSendText.setOnClickListener {
+            val text = binding.etManualInput.text.toString().trim()
+            if (text.isNotBlank()) navigateToTranslation(text)
+        }
+
         viewModel.state.observe(viewLifecycleOwner) { renderState(it) }
         viewModel.cardCount.observe(viewLifecycleOwner) { count ->
             binding.tvCardCount.text = getString(R.string.card_count, count)
+        }
+
+        setInputMode(InputMode.MIC)
+    }
+
+    private fun setInputMode(mode: InputMode) {
+        inputMode = mode
+        val primary = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
+        val grey = ContextCompat.getColor(requireContext(), R.color.grey_medium)
+
+        when (mode) {
+            InputMode.MIC -> {
+                binding.btnMic.visibility = View.VISIBLE
+                binding.layoutTextInput.visibility = View.GONE
+                binding.btnInputMic.imageTintList = ColorStateList.valueOf(primary)
+                binding.btnInputKeyboard.imageTintList = ColorStateList.valueOf(grey)
+            }
+            InputMode.TEXT -> {
+                binding.btnMic.visibility = View.GONE
+                binding.layoutTextInput.visibility = View.VISIBLE
+                binding.tvStatus.visibility = View.GONE
+                binding.progressBar.visibility = View.GONE
+                binding.btnInputMic.imageTintList = ColorStateList.valueOf(grey)
+                binding.btnInputKeyboard.imageTintList = ColorStateList.valueOf(primary)
+                binding.etManualInput.requestFocus()
+            }
         }
     }
 
@@ -82,31 +132,51 @@ class VoiceFragment : Fragment() {
         binding.tvHint.text = getString(
             if (isHebrewInput) R.string.hint_voice else R.string.hint_voice_russian
         )
+        if (isHebrewInput) {
+            binding.etManualInput.textDirection = View.TEXT_DIRECTION_RTL
+            binding.etManualInput.hint = "הכנס טקסט..."
+        } else {
+            binding.etManualInput.textDirection = View.TEXT_DIRECTION_LOCALE
+            binding.etManualInput.hint = "Введите текст..."
+        }
+    }
+
+    private fun navigateToTranslation(text: String) {
+        val bundle = Bundle().apply {
+            putString("inputText", text)
+            putBoolean("isHebrewInput", isHebrewInput)
+        }
+        findNavController().navigate(R.id.action_voice_to_translation, bundle)
     }
 
     private fun renderState(state: VoiceState) = when (state) {
         is VoiceState.Idle -> {
-            binding.tvStatus.text = getString(R.string.btn_start_voice)
+            binding.tvStatus.visibility = View.GONE
             binding.progressBar.visibility = View.GONE
             binding.btnMic.isEnabled = true
         }
         is VoiceState.Listening -> {
             binding.tvStatus.text = getString(R.string.btn_listening)
+            binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = true
         }
         is VoiceState.Translating -> {
             binding.tvStatus.text = getString(R.string.btn_translating)
+            binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = false
         }
         is VoiceState.Error -> {
             binding.tvStatus.text = state.message
+            binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.GONE
             binding.btnMic.isEnabled = true
             viewModel.onErrorHandled()
         }
     }
+
+    // ── Permission & voice recognition ───────────────────────────────────────
 
     private fun checkPermissionAndListen() {
         if (ContextCompat.checkSelfPermission(
@@ -167,11 +237,7 @@ class VoiceFragment : Fragment() {
                     ?.firstOrNull()
                 if (!text.isNullOrBlank()) {
                     viewModel.onTranslating()
-                    val bundle = Bundle().apply {
-                        putString("inputText", text)
-                        putBoolean("isHebrewInput", isHebrewInput)
-                    }
-                    findNavController().navigate(R.id.action_voice_to_translation, bundle)
+                    navigateToTranslation(text)
                 } else {
                     viewModel.onIdle()
                     Toast.makeText(requireContext(), getString(R.string.error_no_speech), Toast.LENGTH_SHORT).show()

@@ -47,6 +47,7 @@
     <string name="swipe_hint">← Не знаю | Знаю →</string>
     <string name="btn_new_input">Новый ввод</string>
     <string name="btn_retranslate">Перевести</string>
+    <string name="clipboard_empty">Буфер обмена пуст</string>
     <string name="btn_restart_all">Начать заново</string>
     <string name="memorized_count">Запомнено: %d</string>
     <string name="mode_memorize">Запоминание</string>
