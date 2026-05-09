@@ -17,6 +17,7 @@ import com.example.hebrew.data.Card
 import com.example.hebrew.databinding.BottomSheetCardPreviewBinding
 import com.example.hebrew.databinding.ItemExampleBinding
 import com.example.hebrew.ui.learning.ExampleItem
+import com.example.hebrew.ui.translation.AnalysisBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +90,14 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
             transliterateToggle(binding.tvTransliteration, hebrew)
         }
 
+        binding.btnConjugate.setOnClickListener {
+            loadAnalysis("conj", hebrew)
+        }
+
+        binding.btnSyntax.setOnClickListener {
+            loadAnalysis("syntax", hebrew)
+        }
+
         binding.btnExamples.setOnClickListener {
             loadExamples(hebrew)
         }
@@ -99,6 +108,40 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
         binding.cardFront.setOnClickListener(tapListener)
         binding.cardBack.setOnClickListener(tapListener)
         binding.cardContainer.setOnClickListener(tapListener)
+    }
+
+    private fun loadAnalysis(type: String, hebrew: String) {
+        val prefs = requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
+        val apiKey = prefs.getString("openai_api_key", "") ?: ""
+        if (apiKey.isBlank()) {
+            Toast.makeText(requireContext(), "Введите API ключ в настройках", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val titleRes = if (type == "conj") com.example.hebrew.R.string.analysis_conjugation_title
+                       else com.example.hebrew.R.string.analysis_syntax_title
+        val prompt = if (type == "conj") {
+            "В фразе на иврите «$hebrew» найди все глаголы. Для каждого глагола отдельно проспрягай его во ВСЕХ временах: прошедшее (עבר), настоящее (הווה), будущее (עתיד) и повелительное (ציווי) — по всем лицам и числам. Для каждой формы укажи форму на иврите и транслитерацию русскими буквами в скобках. Используй маркированный список, без таблиц. Ответ на русском языке."
+        } else {
+            "Сделай синтаксический разбор фразы на иврите «$hebrew»: для каждого слова укажи само слово на иврите, его перевод на русский, часть речи и синтаксическую функцию в предложении. Оформи как нумерованный список. Ответ на русском языке."
+        }
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    OpenAIClient.service.getCompletion(
+                        auth = "Bearer $apiKey",
+                        request = ChatRequest(
+                            messages = listOf(ChatMessage("user", prompt)),
+                            max_tokens = 800
+                        )
+                    )
+                }
+                val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
+                AnalysisBottomSheet.newInstance(getString(titleRes), content)
+                    .show(childFragmentManager, "analysis")
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), e.message ?: "Ошибка", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun loadExamples(hebrew: String) {

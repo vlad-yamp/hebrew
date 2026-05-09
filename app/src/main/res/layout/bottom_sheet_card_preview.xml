@@ -116,11 +116,29 @@
                 android:id="@+id/btnTransliterate"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_marginEnd="12dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_transliterate"
                 android:tint="@color/colorPrimary"
                 android:contentDescription="Транслитерация" />
+
+            <ImageButton
+                android:id="@+id/btnConjugate"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_conjugate"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="@string/analysis_conjugation_title" />
+
+            <ImageButton
+                android:id="@+id/btnSyntax"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_syntax"
+                android:tint="@color/colorPrimary"
+                android:contentDescription="@string/analysis_syntax_title" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExamples"
