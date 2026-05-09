@@ -119,7 +119,6 @@ class TranslationFragment : Fragment() {
                     binding.btnNewInput.visibility = View.GONE
                     binding.progressExamples.visibility = View.GONE
                     binding.examplesContainer.removeAllViews()
-                    binding.progressAnalysis.visibility = View.GONE
                     binding.tvTransliterationInput.visibility = View.GONE
                     binding.tvTransliterationInput.text = ""
                     binding.tvTransliterationResult.visibility = View.GONE
@@ -194,15 +193,27 @@ class TranslationFragment : Fragment() {
 
         viewModel.analysisState.observe(viewLifecycleOwner) { state ->
             when (state) {
-                is AnalysisState.Idle -> binding.progressAnalysis.visibility = View.GONE
-                is AnalysisState.Loading -> binding.progressAnalysis.visibility = View.VISIBLE
+                is AnalysisState.Idle -> {}
+                is AnalysisState.Loading -> {}
                 is AnalysisState.Done -> {
-                    binding.progressAnalysis.visibility = View.GONE
-                    showAnalysisSheet(state.type, state.text)
+                    val title = getString(
+                        if (state.type == "conj") R.string.analysis_conjugation_title
+                        else R.string.analysis_syntax_title
+                    )
+                    val sheet = childFragmentManager.findFragmentByTag("analysis") as? AnalysisBottomSheet
+                    if (sheet != null && sheet.isAdded) {
+                        sheet.setContent(title, state.text)
+                    } else {
+                        showAnalysisSheet(state.type, state.text)
+                    }
                 }
                 is AnalysisState.Error -> {
-                    binding.progressAnalysis.visibility = View.GONE
-                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    val sheet = childFragmentManager.findFragmentByTag("analysis") as? AnalysisBottomSheet
+                    if (sheet != null && sheet.isAdded) {
+                        sheet.showError(state.message)
+                    } else {
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -322,16 +333,29 @@ class TranslationFragment : Fragment() {
 
     private fun onConjugateClick() {
         val s = viewModel.analysisState.value
-        if (s is AnalysisState.Loading) return
-        if (s is AnalysisState.Done && s.type == "conj") showAnalysisSheet(s.type, s.text)
-        else viewModel.loadConjugation()
+        if (s is AnalysisState.Done && s.type == "conj") {
+            showAnalysisSheet(s.type, s.text)
+            return
+        }
+        if (s !is AnalysisState.Loading) viewModel.loadConjugation()
+        ensureAnalysisSheetShown()
     }
 
     private fun onSyntaxClick() {
         val s = viewModel.analysisState.value
-        if (s is AnalysisState.Loading) return
-        if (s is AnalysisState.Done && s.type == "syntax") showAnalysisSheet(s.type, s.text)
-        else viewModel.loadSyntaxAnalysis()
+        if (s is AnalysisState.Done && s.type == "syntax") {
+            showAnalysisSheet(s.type, s.text)
+            return
+        }
+        if (s !is AnalysisState.Loading) viewModel.loadSyntaxAnalysis()
+        ensureAnalysisSheetShown()
+    }
+
+    private fun ensureAnalysisSheetShown() {
+        val existing = childFragmentManager.findFragmentByTag("analysis")
+        if (existing == null || !existing.isAdded) {
+            AnalysisBottomSheet.newInstance().show(childFragmentManager, "analysis")
+        }
     }
 
     private fun showAnalysisSheet(type: String, content: String) {

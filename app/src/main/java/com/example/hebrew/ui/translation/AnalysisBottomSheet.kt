@@ -27,13 +27,36 @@ class AnalysisBottomSheet : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvAnalysisTitle.text = arguments?.getString(ARG_TITLE) ?: ""
-        binding.tvAnalysisContent.text = parseMarkdownBold(arguments?.getString(ARG_CONTENT) ?: "")
 
         (dialog as? BottomSheetDialog)?.behavior?.apply {
             state = BottomSheetBehavior.STATE_EXPANDED
             skipCollapsed = true
         }
+
+        val title = arguments?.getString(ARG_TITLE)
+        val content = arguments?.getString(ARG_CONTENT)
+        if (title != null && content != null) {
+            showContent(title, content)
+        }
+    }
+
+    fun setContent(title: String, content: String) {
+        if (_binding == null) return
+        showContent(title, content)
+    }
+
+    fun showError(message: String) {
+        if (_binding == null) return
+        showContent("Ошибка", message)
+    }
+
+    private fun showContent(title: String, content: String) {
+        binding.progressAnalysis.visibility = View.GONE
+        binding.tvAnalysisTitle.text = title
+        binding.tvAnalysisTitle.visibility = View.VISIBLE
+        binding.divider.visibility = View.VISIBLE
+        binding.scrollContent.visibility = View.VISIBLE
+        binding.tvAnalysisContent.text = parseMarkdownBold(content)
     }
 
     override fun onDestroyView() {
@@ -59,6 +82,8 @@ class AnalysisBottomSheet : BottomSheetDialogFragment() {
     companion object {
         private const val ARG_TITLE = "title"
         private const val ARG_CONTENT = "content"
+
+        fun newInstance() = AnalysisBottomSheet()
 
         fun newInstance(title: String, content: String) = AnalysisBottomSheet().apply {
             arguments = Bundle().apply {

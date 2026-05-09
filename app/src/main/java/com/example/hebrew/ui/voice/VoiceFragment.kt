@@ -1,6 +1,7 @@
 package com.example.hebrew.ui.voice
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -34,6 +35,7 @@ class VoiceFragment : Fragment() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var isHebrewInput = true
     private var inputMode = InputMode.MIC
+    private val rippleAnimators = mutableListOf<ValueAnimator>()
 
     private val prefs by lazy {
         requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
@@ -79,7 +81,10 @@ class VoiceFragment : Fragment() {
         }
 
         binding.btnInputMic.setOnClickListener { setInputMode(InputMode.MIC) }
-        binding.btnInputKeyboard.setOnClickListener { setInputMode(InputMode.TEXT) }
+        binding.btnInputKeyboard.setOnClickListener {
+            stopRipple()
+            setInputMode(InputMode.TEXT)
+        }
 
         binding.btnInputClipboard.setOnClickListener {
             val cm = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -149,30 +154,75 @@ class VoiceFragment : Fragment() {
         findNavController().navigate(R.id.action_voice_to_translation, bundle)
     }
 
-    private fun renderState(state: VoiceState) = when (state) {
+    private fun renderState(state: VoiceState) { when (state) {
         is VoiceState.Idle -> {
             binding.tvStatus.visibility = View.GONE
             binding.progressBar.visibility = View.GONE
             binding.btnMic.isEnabled = true
+            stopRipple()
         }
         is VoiceState.Listening -> {
             binding.tvStatus.text = getString(R.string.btn_listening)
             binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = true
+            if (inputMode == InputMode.MIC) startRipple()
         }
         is VoiceState.Translating -> {
             binding.tvStatus.text = getString(R.string.btn_translating)
             binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = false
+            if (inputMode == InputMode.MIC) startRipple()
         }
         is VoiceState.Error -> {
             binding.tvStatus.text = state.message
             binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.GONE
             binding.btnMic.isEnabled = true
+            stopRipple()
             viewModel.onErrorHandled()
+        }
+    } }
+
+    private fun startRipple() {
+        if (rippleAnimators.isNotEmpty()) return
+        val rippleViews = listOf(binding.ripple1, binding.ripple2, binding.ripple3)
+        rippleViews.forEach { v ->
+            v.visibility = View.VISIBLE
+            v.alpha = 0f
+            v.scaleX = 1f
+            v.scaleY = 1f
+        }
+        rippleViews.forEachIndexed { index, view ->
+            val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 1500
+                startDelay = (index * 500).toLong()
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.RESTART
+                addUpdateListener { anim ->
+                    val f = anim.animatedFraction
+                    view.scaleX = f
+                    view.scaleY = f
+                    view.alpha = 0.35f * (1f - f)
+                }
+            }
+            rippleAnimators.add(animator)
+            animator.start()
+        }
+    }
+
+    private fun stopRipple() {
+        rippleAnimators.forEach { it.cancel() }
+        rippleAnimators.clear()
+        if (_binding != null) {
+            listOf(binding.ripple1, binding.ripple2, binding.ripple3).forEach { v ->
+                v.animate().cancel()
+                v.visibility = View.INVISIBLE
+                v.alpha = 0f
+                v.scaleX = 1f
+                v.scaleY = 1f
+            }
         }
     }
 
@@ -269,6 +319,7 @@ class VoiceFragment : Fragment() {
 
     override fun onDestroyView() {
         releaseWakeLock()
+        stopRipple()
         super.onDestroyView()
         speechRecognizer?.destroy()
         speechRecognizer = null

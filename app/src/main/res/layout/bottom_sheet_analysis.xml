@@ -22,17 +22,31 @@
         android:paddingBottom="12dp"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#212121" />
+        android:textColor="#212121"
+        android:visibility="gone" />
 
     <View
+        android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E0E0E0" />
+        android:background="#E0E0E0"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/progressAnalysis"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="40dp"
+        android:visibility="visible" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/tvAnalysisContent"

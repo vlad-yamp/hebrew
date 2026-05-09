@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/grey_light">
+    android:background="@color/grey_light"
+    android:clipChildren="false">
 
     <TextView
         android:id="@+id/tvAppTitle"
@@ -77,6 +78,8 @@
         android:layout_width="0dp"
         android:layout_height="148dp"
         android:layout_marginTop="32dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/langToggle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -92,6 +95,34 @@
             android:scaleType="centerInside"
             android:padding="24dp"
             android:contentDescription="Микрофон" />
+
+        <!-- Ripple pulse circles on top of button (clipped by button shape visually) -->
+        <View
+            android:id="@+id/ripple1"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center_horizontal|top"
+            android:background="@drawable/ic_ripple_circle"
+            android:alpha="0"
+            android:visibility="invisible" />
+
+        <View
+            android:id="@+id/ripple2"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center_horizontal|top"
+            android:background="@drawable/ic_ripple_circle"
+            android:alpha="0"
+            android:visibility="invisible" />
+
+        <View
+            android:id="@+id/ripple3"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center_horizontal|top"
+            android:background="@drawable/ic_ripple_circle"
+            android:alpha="0"
+            android:visibility="invisible" />
 
         <!-- Text input (hidden by default, text mode) -->
         <LinearLayout

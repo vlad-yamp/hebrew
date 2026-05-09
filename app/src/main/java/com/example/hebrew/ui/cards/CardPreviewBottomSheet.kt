@@ -124,6 +124,10 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
         } else {
             "Сделай синтаксический разбор фразы на иврите «$hebrew»: для каждого слова укажи само слово на иврите, его перевод на русский, часть речи и синтаксическую функцию в предложении. Оформи как нумерованный список. Ответ на русском языке."
         }
+
+        val sheet = AnalysisBottomSheet.newInstance()
+        sheet.show(childFragmentManager, "analysis")
+
         scope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
@@ -136,10 +140,9 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
                     )
                 }
                 val content = response.choices.firstOrNull()?.message?.content?.trim() ?: ""
-                AnalysisBottomSheet.newInstance(getString(titleRes), content)
-                    .show(childFragmentManager, "analysis")
+                sheet.setContent(getString(titleRes), content)
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), e.message ?: "Ошибка", Toast.LENGTH_SHORT).show()
+                sheet.showError(e.message ?: "Ошибка")
             }
         }
     }
