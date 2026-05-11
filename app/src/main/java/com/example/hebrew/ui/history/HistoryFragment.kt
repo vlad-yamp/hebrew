@@ -13,7 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.hebrew.R
 import com.example.hebrew.api.TransliterationHelper
-import com.example.hebrew.data.Card
 import com.example.hebrew.databinding.FragmentHistoryBinding
 import com.example.hebrew.ui.cards.CardPreviewBottomSheet
 import kotlinx.coroutines.launch
@@ -38,7 +37,7 @@ class HistoryFragment : Fragment() {
 
     private val adapter = HistoryAdapter(
         onEntryClick = { entry ->
-            CardPreviewBottomSheet.newInstance(Card(hebrew = entry.hebrew, russian = entry.russian))
+            CardPreviewBottomSheet.newInstance(entry)
                 .show(childFragmentManager, "preview")
         },
         onSpeakClick = { entry ->

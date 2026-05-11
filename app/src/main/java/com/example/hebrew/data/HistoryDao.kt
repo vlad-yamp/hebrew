@@ -20,4 +20,10 @@ interface HistoryDao {
 
     @Query("DELETE FROM history WHERE id NOT IN (SELECT id FROM history ORDER BY timestamp DESC LIMIT :maxCount)")
     suspend fun trimToMax(maxCount: Int)
+
+    @Query("UPDATE history SET russian = :russian WHERE id = :id")
+    suspend fun updateRussianById(id: Int, russian: String)
+
+    @Query("UPDATE history SET russian = :russian WHERE hebrew = :hebrew")
+    suspend fun updateRussianByHebrew(hebrew: String, russian: String)
 }

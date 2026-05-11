@@ -21,4 +21,6 @@ class CardRepository(private val dao: CardDao) {
     suspend fun deleteAll() = dao.deleteAll()
 
     suspend fun resetAllKnownCounts() = dao.resetAllKnownCounts()
+
+    suspend fun updateRussianById(id: Long, russian: String) = dao.updateRussianById(id, russian)
 }

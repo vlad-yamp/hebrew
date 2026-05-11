@@ -9,11 +9,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import com.example.hebrew.HebrewApplication
 import com.example.hebrew.api.ChatMessage
 import com.example.hebrew.api.ChatRequest
 import com.example.hebrew.api.OpenAIClient
 import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.data.Card
+import com.example.hebrew.data.HistoryEntry
 import com.example.hebrew.databinding.BottomSheetCardPreviewBinding
 import com.example.hebrew.databinding.ItemExampleBinding
 import com.example.hebrew.ui.learning.ExampleItem
@@ -55,11 +58,24 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
     companion object {
         private const val ARG_HEBREW = "hebrew"
         private const val ARG_RUSSIAN = "russian"
+        private const val ARG_CARD_ID = "card_id"
+        private const val ARG_HISTORY_ID = "history_id"
 
         fun newInstance(card: Card) = CardPreviewBottomSheet().apply {
             arguments = Bundle().apply {
                 putString(ARG_HEBREW, card.hebrew)
                 putString(ARG_RUSSIAN, card.russian)
+                putLong(ARG_CARD_ID, card.id)
+                putInt(ARG_HISTORY_ID, -1)
+            }
+        }
+
+        fun newInstance(entry: HistoryEntry) = CardPreviewBottomSheet().apply {
+            arguments = Bundle().apply {
+                putString(ARG_HEBREW, entry.hebrew)
+                putString(ARG_RUSSIAN, entry.russian)
+                putLong(ARG_CARD_ID, -1L)
+                putInt(ARG_HISTORY_ID, entry.id)
             }
         }
     }
@@ -102,12 +118,49 @@ class CardPreviewBottomSheet : BottomSheetDialogFragment() {
             loadExamples(hebrew)
         }
 
+        val cardId = arguments?.getLong(ARG_CARD_ID, -1L) ?: -1L
+        val historyId = arguments?.getInt(ARG_HISTORY_ID, -1) ?: -1
+
+        binding.btnEditRussian.setOnClickListener {
+            showEditDialog(binding.tvRussianWord.text.toString(), cardId, historyId)
+        }
+
         val tapListener = View.OnClickListener {
             if (!isFlipped) animateFlipToBack() else animateFlipToFront()
         }
         binding.cardFront.setOnClickListener(tapListener)
         binding.cardBack.setOnClickListener(tapListener)
         binding.cardContainer.setOnClickListener(tapListener)
+    }
+
+    private fun showEditDialog(current: String, cardId: Long, historyId: Int) {
+        val input = android.widget.EditText(requireContext()).apply {
+            setText(current)
+            setSelection(current.length)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Редактировать перевод")
+            .setView(input)
+            .setPositiveButton("Сохранить") { _, _ ->
+                val newText = input.text.toString().trim()
+                if (newText.isNotBlank()) {
+                    binding.tvRussianWord.text = newText
+                    val hebrew = arguments?.getString(ARG_HEBREW) ?: ""
+                    val app = requireContext().applicationContext as HebrewApplication
+                    scope.launch {
+                        if (cardId > 0) {
+                            app.repository.updateRussianById(cardId, newText)
+                            if (hebrew.isNotBlank()) {
+                                app.historyRepository.updateRussianByHebrew(hebrew, newText)
+                            }
+                        } else if (historyId > 0) {
+                            app.historyRepository.updateRussianById(historyId, newText)
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun loadAnalysis(type: String, hebrew: String) {

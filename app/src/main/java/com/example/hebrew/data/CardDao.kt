@@ -35,4 +35,7 @@ interface CardDao {
 
     @Query("UPDATE cards SET knownCount = 0")
     suspend fun resetAllKnownCounts()
+
+    @Query("UPDATE cards SET russian = :russian WHERE id = :id")
+    suspend fun updateRussianById(id: Long, russian: String)
 }

@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -123,6 +124,7 @@ class TranslationFragment : Fragment() {
                     binding.tvTransliterationInput.text = ""
                     binding.tvTransliterationResult.visibility = View.GONE
                     binding.tvTransliterationResult.text = ""
+                    binding.btnEditTranslation.visibility = View.GONE
                 }
 
                 is TranslationState.Streaming -> {
@@ -135,6 +137,7 @@ class TranslationFragment : Fragment() {
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
+                    binding.btnEditTranslation.visibility = View.GONE
                 }
 
                 is TranslationState.SingleTranslation -> {
@@ -148,6 +151,7 @@ class TranslationFragment : Fragment() {
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
                     if (!isHebrewInput) binding.hebrewActionsBar.visibility = View.VISIBLE
+                    binding.btnEditTranslation.visibility = if (isHebrewInput) View.VISIBLE else View.GONE
                 }
 
                 is TranslationState.MultipleVariants -> {
@@ -329,6 +333,26 @@ class TranslationFragment : Fragment() {
             viewModel.saveCard()
         }
         binding.btnNewInput.setOnClickListener { findNavController().popBackStack() }
+        binding.btnEditTranslation.setOnClickListener {
+            val current = binding.tvSingleTranslation.text.toString()
+            val input = android.widget.EditText(requireContext()).apply {
+                setText(current)
+                setSelection(current.length)
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle("Редактировать перевод")
+                .setView(input)
+                .setPositiveButton("Сохранить") { _, _ ->
+                    val newText = input.text.toString().trim()
+                    if (newText.isNotBlank()) {
+                        binding.tvSingleTranslation.text = newText
+                        viewModel.updateHistoryRussian(newText)
+                        viewModel.selectVariant(newText)
+                    }
+                }
+                .setNegativeButton("Отмена", null)
+                .show()
+        }
     }
 
     private fun onConjugateClick() {

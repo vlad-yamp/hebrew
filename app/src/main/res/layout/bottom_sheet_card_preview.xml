@@ -75,13 +75,30 @@
                     android:gravity="center"
                     android:padding="16dp">
 
-                    <TextView
-                        android:id="@+id/tvRussianWord"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="18sp"
-                        android:textColor="@color/text_primary"
-                        android:gravity="center" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/tvRussianWord"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:textSize="18sp"
+                            android:textColor="@color/text_primary"
+                            android:gravity="center" />
+
+                        <ImageButton
+                            android:id="@+id/btnEditRussian"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/ic_pencil"
+                            android:tint="@color/grey_medium"
+                            android:contentDescription="Редактировать" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"

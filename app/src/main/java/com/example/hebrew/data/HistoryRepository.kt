@@ -13,4 +13,8 @@ class HistoryRepository(private val dao: HistoryDao) {
     suspend fun deleteAll() = dao.deleteAll()
 
     suspend fun trimToMax(maxCount: Int) = dao.trimToMax(maxCount)
+
+    suspend fun updateRussianById(id: Int, russian: String) = dao.updateRussianById(id, russian)
+
+    suspend fun updateRussianByHebrew(hebrew: String, russian: String) = dao.updateRussianByHebrew(hebrew, russian)
 }

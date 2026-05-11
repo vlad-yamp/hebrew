@@ -153,13 +153,31 @@
                     android:textColor="@color/grey_medium"
                     android:textAllCaps="true" />
 
-                <TextView
-                    android:id="@+id/tvSingleTranslation"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="22sp"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginTop="4dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+
+                    <TextView
+                        android:id="@+id/tvSingleTranslation"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:textSize="22sp"
+                        android:textColor="@color/text_primary" />
+
+                    <ImageButton
+                        android:id="@+id/btnEditTranslation"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_pencil"
+                        android:tint="@color/grey_medium"
+                        android:contentDescription="Редактировать"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

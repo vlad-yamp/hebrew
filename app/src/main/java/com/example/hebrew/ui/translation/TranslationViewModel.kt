@@ -196,6 +196,13 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     fun onCardSavedHandled() { _cardSaved.value = false }
     fun onDuplicateHandled() { _duplicateCard.value = false }
 
+    fun updateHistoryRussian(newRussian: String) {
+        if (!isHebrewInput) return
+        viewModelScope.launch {
+            historyRepository.updateRussianByHebrew(inputText, newRussian)
+        }
+    }
+
     fun loadConjugation() = loadAnalysis("conj")
     fun loadSyntaxAnalysis() = loadAnalysis("syntax")
     fun clearAnalysis() { _analysisState.value = AnalysisState.Idle }
