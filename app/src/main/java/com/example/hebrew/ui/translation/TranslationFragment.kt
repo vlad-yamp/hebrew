@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +21,8 @@ import com.example.hebrew.api.TransliterationHelper
 import com.example.hebrew.databinding.FragmentTranslationBinding
 import com.example.hebrew.databinding.ItemExampleBinding
 import com.example.hebrew.ui.learning.ExampleItem
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -35,6 +36,8 @@ class TranslationFragment : Fragment() {
 
     private var isHebrewInput = true
     private var inputText = ""
+    private var suppressTranslationSave = false
+    private var editJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -124,7 +127,6 @@ class TranslationFragment : Fragment() {
                     binding.tvTransliterationInput.text = ""
                     binding.tvTransliterationResult.visibility = View.GONE
                     binding.tvTransliterationResult.text = ""
-                    binding.btnEditTranslation.visibility = View.GONE
                 }
 
                 is TranslationState.Streaming -> {
@@ -132,12 +134,13 @@ class TranslationFragment : Fragment() {
                     binding.btnRetranslate.alpha = 0.3f
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.VISIBLE
-                    binding.tvSingleTranslation.text = state.partialText
+                    suppressTranslationSave = true
+                    binding.tvSingleTranslation.setText(state.partialText)
+                    suppressTranslationSave = false
                     binding.cardVariants.visibility = View.GONE
                     binding.btnExamples.visibility = View.GONE
                     binding.btnSaveCard.visibility = View.GONE
                     binding.btnNewInput.visibility = View.GONE
-                    binding.btnEditTranslation.visibility = View.GONE
                 }
 
                 is TranslationState.SingleTranslation -> {
@@ -145,13 +148,14 @@ class TranslationFragment : Fragment() {
                     binding.btnRetranslate.alpha = 1f
                     binding.progressTranslation.visibility = View.GONE
                     binding.cardSingleTranslation.visibility = View.VISIBLE
-                    binding.tvSingleTranslation.text = state.text
+                    suppressTranslationSave = true
+                    binding.tvSingleTranslation.setText(state.text)
+                    suppressTranslationSave = false
                     binding.cardVariants.visibility = View.GONE
                     binding.btnExamples.visibility = View.VISIBLE
                     binding.btnSaveCard.visibility = View.VISIBLE
                     binding.btnNewInput.visibility = View.VISIBLE
                     if (!isHebrewInput) binding.hebrewActionsBar.visibility = View.VISIBLE
-                    binding.btnEditTranslation.visibility = if (isHebrewInput) View.VISIBLE else View.GONE
                 }
 
                 is TranslationState.MultipleVariants -> {
@@ -333,26 +337,21 @@ class TranslationFragment : Fragment() {
             viewModel.saveCard()
         }
         binding.btnNewInput.setOnClickListener { findNavController().popBackStack() }
-        binding.btnEditTranslation.setOnClickListener {
-            val current = binding.tvSingleTranslation.text.toString()
-            val input = android.widget.EditText(requireContext()).apply {
-                setText(current)
-                setSelection(current.length)
-            }
-            AlertDialog.Builder(requireContext())
-                .setTitle("Редактировать перевод")
-                .setView(input)
-                .setPositiveButton("Сохранить") { _, _ ->
-                    val newText = input.text.toString().trim()
-                    if (newText.isNotBlank()) {
-                        binding.tvSingleTranslation.text = newText
-                        viewModel.updateHistoryRussian(newText)
-                        viewModel.selectVariant(newText)
-                    }
+        binding.tvSingleTranslation.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (suppressTranslationSave) return
+                val newText = s?.toString()?.trim() ?: return
+                if (newText.isBlank()) return
+                editJob?.cancel()
+                editJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(800)
+                    viewModel.updateHistoryRussian(newText)
+                    viewModel.selectVariant(newText)
                 }
-                .setNegativeButton("Отмена", null)
-                .show()
-        }
+            }
+        })
     }
 
     private fun onConjugateClick() {
