@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -37,6 +39,8 @@ class VoiceFragment : Fragment() {
     private var inputMode = InputMode.MIC
     private val rippleAnimators = mutableListOf<ValueAnimator>()
     private var rippleMaxScale = 0.3f
+    private val silenceHandler = Handler(Looper.getMainLooper())
+    private val stopOnSilence = Runnable { speechRecognizer?.stopListening() }
 
     private val prefs by lazy {
         requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
@@ -73,9 +77,9 @@ class VoiceFragment : Fragment() {
 
         binding.btnMic.setOnClickListener {
             if (viewModel.state.value is VoiceState.Listening) {
-                speechRecognizer?.cancel()
-                releaseWakeLock()
-                viewModel.onIdle()
+                silenceHandler.removeCallbacks(stopOnSilence)
+                speechRecognizer?.stopListening()
+                viewModel.onTranslating()
             } else {
                 checkPermissionAndListen()
             }
@@ -278,16 +282,21 @@ class VoiceFragment : Fragment() {
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) = viewModel.onListening()
-            override fun onBeginningOfSpeech() {}
+            override fun onBeginningOfSpeech() {
+                silenceHandler.removeCallbacks(stopOnSilence)
+            }
             override fun onRmsChanged(rmsdB: Float) {
                 val rms = rmsdB.coerceIn(0f, 10f) / 10f
                 val target = 0.3f + 0.7f * rms
                 rippleMaxScale = rippleMaxScale * 0.5f + target * 0.5f
             }
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() {
+                silenceHandler.postDelayed(stopOnSilence, 1000)
+            }
 
             override fun onResults(results: Bundle?) {
+                silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
                 wakeScreen()
                 val text = results
@@ -303,6 +312,7 @@ class VoiceFragment : Fragment() {
             }
 
             override fun onError(error: Int) {
+                silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
                 viewModel.onIdle()
                 val msg = when (error) {
@@ -326,6 +336,7 @@ class VoiceFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        silenceHandler.removeCallbacksAndMessages(null)
         releaseWakeLock()
         stopRipple()
         super.onDestroyView()
