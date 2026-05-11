@@ -11,6 +11,7 @@ import com.example.hebrew.api.ChatMessage
 import com.example.hebrew.api.ChatRequest
 import com.example.hebrew.api.OpenAIClient
 import com.example.hebrew.data.Card
+import com.example.hebrew.data.HistoryEntry
 import com.example.hebrew.ui.learning.ExampleItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,6 +21,7 @@ import org.json.JSONObject
 class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = (app as HebrewApplication).repository
+    private val historyRepository = (app as HebrewApplication).historyRepository
     private val prefs = app.getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
 
     private val _translationState = MutableLiveData<TranslationState>(TranslationState.Idle)
@@ -112,14 +114,17 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 
                 val content = fullText.toString().trim()
                 val variants = parseVariants(content)
+                val firstVariant: String
                 if (variants.size > 1) {
-                    selectedVariant = variants[0]
+                    firstVariant = variants[0]
+                    selectedVariant = firstVariant
                     _translationState.value = TranslationState.MultipleVariants(variants)
                 } else {
-                    val single = variants.firstOrNull() ?: content
-                    selectedVariant = single
-                    _translationState.value = TranslationState.SingleTranslation(single)
+                    firstVariant = variants.firstOrNull() ?: content
+                    selectedVariant = firstVariant
+                    _translationState.value = TranslationState.SingleTranslation(firstVariant)
                 }
+                saveToHistory(text, isHebrewInput, firstVariant)
             } catch (e: Exception) {
                 _translationState.value = TranslationState.Error(e.message ?: "Ошибка")
             }
@@ -128,6 +133,18 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectVariant(text: String) {
         selectedVariant = text
+    }
+
+    private fun saveToHistory(inputText: String, isHebrewInput: Boolean, translation: String) {
+        if (translation.isBlank()) return
+        val hebrew = if (isHebrewInput) inputText else translation
+        val russian = if (isHebrewInput) translation else inputText
+        if (hebrew.isBlank() || russian.isBlank()) return
+        val maxCount = prefs.getInt("history_count", 30)
+        viewModelScope.launch {
+            historyRepository.insert(HistoryEntry(hebrew = hebrew, russian = russian))
+            historyRepository.trimToMax(maxCount)
+        }
     }
 
     fun loadExamples() {

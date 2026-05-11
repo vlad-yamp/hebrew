@@ -50,6 +50,12 @@
         tools:layout="@layout/fragment_learning" />
 
     <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.example.hebrew.ui.history.HistoryFragment"
+        android:label="@string/title_history"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
         android:id="@+id/settingsFragment"
         android:name="com.example.hebrew.ui.settings.SettingsFragment"
         android:label="@string/title_settings"

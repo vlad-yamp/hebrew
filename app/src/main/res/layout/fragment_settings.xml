@@ -86,6 +86,25 @@
         android:stepSize="1"
         app:labelBehavior="floating" />
 
+    <!-- History count setting -->
+    <TextView
+        android:id="@+id/tvHistoryCountLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="4dp" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderHistoryCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="10"
+        android:valueTo="100"
+        android:stepSize="10"
+        app:labelBehavior="floating" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveSettings"
         android:layout_width="match_parent"

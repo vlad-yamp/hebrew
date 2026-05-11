@@ -60,4 +60,11 @@
     <string name="lang_hebrew">Иврит</string>
     <string name="lang_russian">Русский</string>
     <string name="hint_voice_russian">Скажите слово или фразу на русском</string>
+    <string name="tab_history">История</string>
+    <string name="title_history">История переводов</string>
+    <string name="history_count">История: %d</string>
+    <string name="history_empty">История пуста</string>
+    <string name="btn_clear_history">Очистить</string>
+    <string name="confirm_clear_history">Очистить историю переводов?</string>
+    <string name="label_history_count">Записей в истории: %d</string>
 </resources>
