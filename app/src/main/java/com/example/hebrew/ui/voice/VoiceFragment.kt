@@ -37,6 +37,7 @@ class VoiceFragment : Fragment() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var isHebrewInput = true
     private var inputMode = InputMode.MIC
+    private var gender = "male"
     private val rippleAnimators = mutableListOf<ValueAnimator>()
     private var rippleMaxScale = 0.3f
     private val silenceHandler = Handler(Looper.getMainLooper())
@@ -65,13 +66,26 @@ class VoiceFragment : Fragment() {
 
         isHebrewInput = prefs.getBoolean("default_lang_hebrew", true)
         binding.langToggle.check(if (isHebrewInput) R.id.btnLangHebrew else R.id.btnLangRussian)
+
+        gender = prefs.getString("gender_preference", "male") ?: "male"
+        binding.genderToggle.check(if (gender == "female") R.id.btnGenderFemale else R.id.btnGenderMale)
+
         updateHint()
+        updateGenderVisibility()
 
         binding.langToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 isHebrewInput = (checkedId == R.id.btnLangHebrew)
                 prefs.edit().putBoolean("default_lang_hebrew", isHebrewInput).apply()
                 updateHint()
+                updateGenderVisibility()
+            }
+        }
+
+        binding.genderToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                gender = if (checkedId == R.id.btnGenderFemale) "female" else "male"
+                prefs.edit().putString("gender_preference", gender).apply()
             }
         }
 
@@ -138,6 +152,10 @@ class VoiceFragment : Fragment() {
         }
     }
 
+    private fun updateGenderVisibility() {
+        binding.genderToggle.visibility = if (isHebrewInput) View.GONE else View.VISIBLE
+    }
+
     private fun updateHint() {
         binding.tvHint.text = getString(
             if (isHebrewInput) R.string.hint_voice else R.string.hint_voice_russian
@@ -155,6 +173,7 @@ class VoiceFragment : Fragment() {
         val bundle = Bundle().apply {
             putString("inputText", text)
             putBoolean("isHebrewInput", isHebrewInput)
+            if (!isHebrewInput) putString("gender", gender)
         }
         findNavController().navigate(R.id.action_voice_to_translation, bundle)
     }

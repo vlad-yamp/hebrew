@@ -49,7 +49,7 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
     // Always the Hebrew text, for TTS and examples
     val currentHebrew: String get() = if (isHebrewInput) inputText else selectedVariant
 
-    fun translate(text: String, isHebrewInput: Boolean) {
+    fun translate(text: String, isHebrewInput: Boolean, gender: String? = null) {
         this.isHebrewInput = isHebrewInput
         this.inputText = text
         this.selectedVariant = ""
@@ -72,7 +72,12 @@ class TranslationViewModel(app: Application) : AndroidViewModel(app) {
 
 Иврит: $text"""
                 } else {
-                    """Переведи следующее слово или фразу с русского на иврит.
+                    val genderHint = when (gender) {
+                        "female" -> "\nАдресат — женщина, используй женскую форму обращения."
+                        "male" -> "\nАдресат — мужчина, используй мужскую форму обращения."
+                        else -> ""
+                    }
+                    """Переведи следующее слово или фразу с русского на иврит.$genderHint
 Если есть несколько вариантов написания или значений, дай до 5 вариантов, пронумеровав их (1. ... 2. ... и т.д.).
 Если вариант один — просто напиши перевод без нумерации.
 Только переводы на иврите, без транслитерации и объяснений.

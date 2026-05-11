@@ -67,4 +67,6 @@
     <string name="btn_clear_history">Очистить</string>
     <string name="confirm_clear_history">Очистить историю переводов?</string>
     <string name="label_history_count">Записей в истории: %d</string>
+    <string name="btn_gender_male">Мужской</string>
+    <string name="btn_gender_female">Женский</string>
 </resources>

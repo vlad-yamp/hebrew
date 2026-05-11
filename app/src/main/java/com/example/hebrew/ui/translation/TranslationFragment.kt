@@ -36,6 +36,7 @@ class TranslationFragment : Fragment() {
 
     private var isHebrewInput = true
     private var inputText = ""
+    private var gender: String? = null
     private var suppressTranslationSave = false
     private var editJob: Job? = null
 
@@ -51,6 +52,7 @@ class TranslationFragment : Fragment() {
 
         isHebrewInput = arguments?.getBoolean("isHebrewInput", true) ?: true
         inputText = arguments?.getString("inputText") ?: arguments?.getString("hebrewText") ?: ""
+        gender = arguments?.getString("gender")
 
         applyInputLanguage()
         initTts()
@@ -58,7 +60,7 @@ class TranslationFragment : Fragment() {
         setupClickListeners()
 
         if (viewModel.translationState.value is TranslationState.Idle) {
-            viewModel.translate(inputText, isHebrewInput)
+            viewModel.translate(inputText, isHebrewInput, gender)
         }
     }
 
@@ -283,7 +285,7 @@ class TranslationFragment : Fragment() {
     private fun setupClickListeners() {
         binding.btnRetranslate.setOnClickListener {
             val text = binding.etInputText.text.toString().trim()
-            if (text.isNotBlank()) viewModel.translate(text, isHebrewInput)
+            if (text.isNotBlank()) viewModel.translate(text, isHebrewInput, gender)
         }
         binding.btnSpeakHebrew.setOnClickListener {
             val text = binding.etInputText.text.toString().trim()
