@@ -36,6 +36,7 @@ class VoiceFragment : Fragment() {
     private var isHebrewInput = true
     private var inputMode = InputMode.MIC
     private val rippleAnimators = mutableListOf<ValueAnimator>()
+    private var rippleMaxScale = 0.3f
 
     private val prefs by lazy {
         requireContext().getSharedPreferences("hebrew_prefs", Context.MODE_PRIVATE)
@@ -173,6 +174,7 @@ class VoiceFragment : Fragment() {
             binding.tvStatus.visibility = View.VISIBLE
             binding.progressBar.visibility = View.VISIBLE
             binding.btnMic.isEnabled = false
+            rippleMaxScale = 0.3f
             if (inputMode == InputMode.MIC) startRipple()
         }
         is VoiceState.Error -> {
@@ -187,12 +189,13 @@ class VoiceFragment : Fragment() {
 
     private fun startRipple() {
         if (rippleAnimators.isNotEmpty()) return
+        rippleMaxScale = 0.3f
         val rippleViews = listOf(binding.ripple1, binding.ripple2, binding.ripple3)
         rippleViews.forEach { v ->
             v.visibility = View.VISIBLE
             v.alpha = 0f
-            v.scaleX = 1f
-            v.scaleY = 1f
+            v.scaleX = 0f
+            v.scaleY = 0f
         }
         rippleViews.forEachIndexed { index, view ->
             val animator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -202,9 +205,10 @@ class VoiceFragment : Fragment() {
                 repeatMode = ValueAnimator.RESTART
                 addUpdateListener { anim ->
                     val f = anim.animatedFraction
-                    view.scaleX = f
-                    view.scaleY = f
-                    view.alpha = 0.35f * (1f - f)
+                    val s = f * rippleMaxScale
+                    view.scaleX = s
+                    view.scaleY = s
+                    view.alpha = 0.45f * rippleMaxScale * (1f - f)
                 }
             }
             rippleAnimators.add(animator)
@@ -275,7 +279,11 @@ class VoiceFragment : Fragment() {
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) = viewModel.onListening()
             override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onRmsChanged(rmsdB: Float) {
+                val rms = rmsdB.coerceIn(0f, 10f) / 10f
+                val target = 0.3f + 0.7f * rms
+                rippleMaxScale = rippleMaxScale * 0.5f + target * 0.5f
+            }
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() {}
 
