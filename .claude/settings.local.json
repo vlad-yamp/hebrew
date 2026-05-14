@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Yampolskiy\\\\.claude\\\\projects\\\\\" -Recurse | Where-Object { $_.Extension -eq \".jsonl\" } | Sort-Object LastWriteTime -Descending | Select-Object -First 10 FullName, LastWriteTime)"
+    ]
+  }
+}

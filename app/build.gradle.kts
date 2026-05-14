@@ -82,3 +82,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+// Alias for Claude Code's build verification — Android uses compileDebugUnitTestKotlin instead
+tasks.register("testClasses") {
+    dependsOn("compileDebugUnitTestKotlin")
+}
