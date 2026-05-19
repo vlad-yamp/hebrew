@@ -202,14 +202,33 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/tvVariantsLabel"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/select_translation"
-                    android:textSize="14sp"
-                    android:textColor="@color/grey_medium"
-                    android:layout_marginBottom="8dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/tvVariantsLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/select_translation"
+                        android:textSize="14sp"
+                        android:textColor="@color/grey_medium" />
+
+                    <ImageButton
+                        android:id="@+id/btnVoiceVariants"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_mic"
+                        android:tint="@color/grey_medium"
+                        android:contentDescription="Ввести голосом"
+                        android:visibility="gone" />
+
+                </LinearLayout>
 
                 <RadioGroup
                     android:id="@+id/radioGroupVariants"

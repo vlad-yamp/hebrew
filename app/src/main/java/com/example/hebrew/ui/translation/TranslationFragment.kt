@@ -6,7 +6,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -49,12 +48,14 @@ class TranslationFragment : Fragment() {
     private var editJob: Job? = null
 
     private var voiceSpeechRecognizer: SpeechRecognizer? = null
-    private var voiceAudioManager: AudioManager? = null
+    private var pendingVoiceButton: android.widget.ImageButton? = null
 
     private val requestMicPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) startTranslationVoiceInput()
+        val btn = pendingVoiceButton ?: return@registerForActivityResult
+        pendingVoiceButton = null
+        if (granted) startTranslationVoiceInput(btn)
         else Toast.makeText(requireContext(), "Нужен доступ к микрофону", Toast.LENGTH_SHORT).show()
     }
 
@@ -98,6 +99,7 @@ class TranslationFragment : Fragment() {
             binding.btnSyntax.visibility = View.VISIBLE
             binding.hebrewActionsBar.visibility = View.GONE
             binding.btnVoiceTranslation.visibility = View.VISIBLE
+            binding.btnVoiceVariants.visibility = View.VISIBLE
         } else {
             binding.tvInputLabel.text = "Русский"
             binding.etInputText.textDirection = View.TEXT_DIRECTION_LOCALE
@@ -358,11 +360,16 @@ class TranslationFragment : Fragment() {
             viewModel.saveCard()
         }
         binding.btnNewInput.setOnClickListener { findNavController().popBackStack() }
-        binding.btnVoiceTranslation.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED
-            ) startTranslationVoiceInput()
-            else requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+        listOf(binding.btnVoiceTranslation, binding.btnVoiceVariants).forEach { btn ->
+            btn.setOnClickListener {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED
+                ) startTranslationVoiceInput(btn as android.widget.ImageButton)
+                else {
+                    pendingVoiceButton = btn as android.widget.ImageButton
+                    requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
         }
         binding.tvSingleTranslation.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -381,17 +388,13 @@ class TranslationFragment : Fragment() {
         })
     }
 
-    private fun startTranslationVoiceInput() {
+    private fun startTranslationVoiceInput(sourceBtn: android.widget.ImageButton) {
         voiceSpeechRecognizer?.destroy()
         voiceSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
 
-        binding.btnVoiceTranslation.setImageResource(R.drawable.ic_mic)
-        binding.btnVoiceTranslation.imageTintList =
-            android.content.res.ColorStateList.valueOf(
-                androidx.core.content.ContextCompat.getColor(requireContext(), R.color.colorPrimary)
-            )
-
-        voiceAudioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val primaryColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
+        val greyColor = ContextCompat.getColor(requireContext(), R.color.grey_medium)
+        sourceBtn.imageTintList = android.content.res.ColorStateList.valueOf(primaryColor)
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -417,12 +420,14 @@ class TranslationFragment : Fragment() {
                     suppressTranslationSave = true
                     binding.tvSingleTranslation.setText(text)
                     suppressTranslationSave = false
+                    binding.cardSingleTranslation.visibility = View.VISIBLE
+                    binding.cardVariants.visibility = View.GONE
                     viewModel.updateHistoryRussian(text)
                     viewModel.selectVariant(text)
                 } else {
                     Toast.makeText(requireContext(), getString(R.string.error_no_speech), Toast.LENGTH_SHORT).show()
                 }
-                resetVoiceButton()
+                if (_binding != null) sourceBtn.imageTintList = android.content.res.ColorStateList.valueOf(greyColor)
             }
 
             override fun onError(error: Int) {
@@ -431,20 +436,11 @@ class TranslationFragment : Fragment() {
                 ) {
                     Toast.makeText(requireContext(), getString(R.string.error_voice), Toast.LENGTH_SHORT).show()
                 }
-                resetVoiceButton()
+                if (_binding != null) sourceBtn.imageTintList = android.content.res.ColorStateList.valueOf(greyColor)
             }
         })
 
         voiceSpeechRecognizer?.startListening(intent)
-    }
-
-    private fun resetVoiceButton() {
-        if (_binding == null) return
-        binding.btnVoiceTranslation.setImageResource(R.drawable.ic_mic)
-        binding.btnVoiceTranslation.imageTintList =
-            android.content.res.ColorStateList.valueOf(
-                androidx.core.content.ContextCompat.getColor(requireContext(), R.color.grey_medium)
-            )
     }
 
     private fun onConjugateClick() {
