@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -35,6 +36,7 @@ class VoiceFragment : Fragment() {
     private val viewModel: VoiceViewModel by viewModels()
     private var speechRecognizer: SpeechRecognizer? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var audioManager: AudioManager? = null
     private var isHebrewInput = true
     private var inputMode = InputMode.MIC
     private var gender = "male"
@@ -285,10 +287,27 @@ class VoiceFragment : Fragment() {
         wl.release()
     }
 
+    private val beepStreams = intArrayOf(
+        AudioManager.STREAM_NOTIFICATION,
+        AudioManager.STREAM_RING,
+        AudioManager.STREAM_SYSTEM,
+        AudioManager.STREAM_MUSIC
+    )
+
+    private fun muteBeep() {
+        audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        beepStreams.forEach { audioManager?.adjustStreamVolume(it, AudioManager.ADJUST_MUTE, 0) }
+    }
+
+    private fun unmuteBeep() {
+        beepStreams.forEach { audioManager?.adjustStreamVolume(it, AudioManager.ADJUST_UNMUTE, 0) }
+    }
+
     private fun startListening() {
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         acquireWakeLock()
+        muteBeep()
 
         val locale = if (isHebrewInput) "iw-IL" else "ru-RU"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -300,7 +319,10 @@ class VoiceFragment : Fragment() {
         }
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) = viewModel.onListening()
+            override fun onReadyForSpeech(params: Bundle?) {
+                unmuteBeep()
+                viewModel.onListening()
+            }
             override fun onBeginningOfSpeech() {
                 silenceHandler.removeCallbacks(stopOnSilence)
             }
@@ -333,6 +355,7 @@ class VoiceFragment : Fragment() {
             override fun onError(error: Int) {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
+                unmuteBeep()
                 viewModel.onIdle()
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH,
