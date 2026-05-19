@@ -104,8 +104,18 @@ class FloatingMicService : Service() {
         }
 
         floatingView = LayoutInflater.from(this).inflate(R.layout.floating_mic_button, null)
+        disableSoundEffects(floatingView)
         setupTouchHandler()
         windowManager?.addView(floatingView, params)
+    }
+
+    private fun disableSoundEffects(view: View?) {
+        if (view == null) return
+        view.isSoundEffectsEnabled = false
+        view.isHapticFeedbackEnabled = false
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) disableSoundEffects(view.getChildAt(i))
+        }
     }
 
     private fun setupTouchHandler() {

@@ -3,14 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:padding="6dp">
+    android:padding="6dp"
+    android:soundEffectsEnabled="false"
+    android:hapticFeedbackEnabled="false">
 
     <androidx.cardview.widget.CardView
         android:layout_width="52dp"
         android:layout_height="52dp"
         app:cardCornerRadius="26dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/colorPrimary">
+        app:cardBackgroundColor="@color/colorPrimary"
+        android:soundEffectsEnabled="false"
+        android:hapticFeedbackEnabled="false">
 
         <ImageView
             android:layout_width="28dp"

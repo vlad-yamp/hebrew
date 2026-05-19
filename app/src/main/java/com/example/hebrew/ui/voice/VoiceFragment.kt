@@ -288,26 +288,49 @@ class VoiceFragment : Fragment() {
     }
 
     private val beepStreams = intArrayOf(
+        AudioManager.STREAM_MUSIC,
         AudioManager.STREAM_NOTIFICATION,
         AudioManager.STREAM_RING,
-        AudioManager.STREAM_SYSTEM,
-        AudioManager.STREAM_MUSIC
+        AudioManager.STREAM_SYSTEM
     )
+    private val savedVolumes = mutableMapOf<Int, Int>()
+    private val unmuteRunnable = Runnable { unmuteBeep() }
 
     private fun muteBeep() {
         audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        beepStreams.forEach { audioManager?.adjustStreamVolume(it, AudioManager.ADJUST_MUTE, 0) }
+        val am = audioManager ?: return
+        silenceHandler.removeCallbacks(unmuteRunnable)
+        beepStreams.forEach { stream ->
+            try {
+                savedVolumes[stream] = am.getStreamVolume(stream)
+                am.setStreamVolume(stream, 0, 0)
+            } catch (_: Exception) {}
+        }
     }
 
     private fun unmuteBeep() {
-        beepStreams.forEach { audioManager?.adjustStreamVolume(it, AudioManager.ADJUST_UNMUTE, 0) }
+        val am = audioManager ?: return
+        beepStreams.forEach { stream ->
+            try {
+                am.setStreamVolume(stream, savedVolumes[stream] ?: am.getStreamMaxVolume(stream), 0)
+            } catch (_: Exception) {}
+        }
+        savedVolumes.clear()
     }
+
+    private fun unmuteBeepDelayed(delayMs: Long = 400) {
+        silenceHandler.removeCallbacks(unmuteRunnable)
+        silenceHandler.postDelayed(unmuteRunnable, delayMs)
+    }
+
+    private fun shouldMuteBeep() =
+        prefs.getBoolean("mute_recognition_sounds", false)
 
     private fun startListening() {
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         acquireWakeLock()
-        muteBeep()
+        if (shouldMuteBeep()) muteBeep()
 
         val locale = if (isHebrewInput) "iw-IL" else "ru-RU"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -320,7 +343,7 @@ class VoiceFragment : Fragment() {
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                unmuteBeep()
+                if (shouldMuteBeep()) unmuteBeepDelayed(300)
                 viewModel.onListening()
             }
             override fun onBeginningOfSpeech() {
@@ -340,6 +363,7 @@ class VoiceFragment : Fragment() {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
                 wakeScreen()
+                if (shouldMuteBeep()) unmuteBeepDelayed(300)
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
@@ -355,7 +379,7 @@ class VoiceFragment : Fragment() {
             override fun onError(error: Int) {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
-                unmuteBeep()
+                if (shouldMuteBeep()) unmuteBeepDelayed(600)
                 viewModel.onIdle()
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH,
@@ -379,6 +403,7 @@ class VoiceFragment : Fragment() {
 
     override fun onDestroyView() {
         silenceHandler.removeCallbacksAndMessages(null)
+        unmuteBeep()
         releaseWakeLock()
         stopRipple()
         super.onDestroyView()

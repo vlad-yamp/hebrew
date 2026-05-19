@@ -29,6 +29,8 @@ class SettingsFragment : Fragment() {
 
         binding.etApiKey.setText(prefs.getString("openai_api_key", ""))
 
+        binding.switchMuteSounds.isChecked = prefs.getBoolean("mute_recognition_sounds", false)
+
         val savedReps = prefs.getInt("repetitions_count", 4)
         binding.sliderRepetitions.value = savedReps.toFloat()
         binding.tvRepetitionsLabel.text = getString(R.string.label_repetitions, savedReps)
@@ -63,6 +65,7 @@ class SettingsFragment : Fragment() {
                 .putInt("repetitions_count", reps)
                 .putInt("examples_count", examples)
                 .putInt("history_count", history)
+                .putBoolean("mute_recognition_sounds", binding.switchMuteSounds.isChecked)
                 .apply()
             Toast.makeText(requireContext(), getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
         }
