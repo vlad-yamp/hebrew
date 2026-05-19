@@ -95,6 +95,7 @@ class VoiceFragment : Fragment() {
             if (viewModel.state.value is VoiceState.Listening) {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 speechRecognizer?.stopListening()
+                scheduleVolumeRestore()
                 viewModel.onTranslating()
             } else {
                 checkPermissionAndListen()
@@ -294,33 +295,40 @@ class VoiceFragment : Fragment() {
         AudioManager.STREAM_SYSTEM
     )
     private val savedVolumes = mutableMapOf<Int, Int>()
-    private val unmuteRunnable = Runnable { unmuteBeep() }
+    private val restoreRunnable = Runnable { doRestoreVolumes() }
 
-    private fun muteBeep() {
+    private fun saveVolumes() {
         audioManager = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val am = audioManager ?: return
-        silenceHandler.removeCallbacks(unmuteRunnable)
+        silenceHandler.removeCallbacks(restoreRunnable)
+        savedVolumes.clear()
         beepStreams.forEach { stream ->
-            try {
-                savedVolumes[stream] = am.getStreamVolume(stream)
-                am.setStreamVolume(stream, 0, 0)
-            } catch (_: Exception) {}
+            try { savedVolumes[stream] = am.getStreamVolume(stream) } catch (_: Exception) {}
+        }
+        if (shouldMuteBeep()) {
+            beepStreams.forEach { stream ->
+                try { am.setStreamVolume(stream, 0, 0) } catch (_: Exception) {}
+            }
         }
     }
 
-    private fun unmuteBeep() {
+    private fun doRestoreVolumes() {
+        if (savedVolumes.isEmpty()) return
         val am = audioManager ?: return
         beepStreams.forEach { stream ->
-            try {
-                am.setStreamVolume(stream, savedVolumes[stream] ?: am.getStreamMaxVolume(stream), 0)
-            } catch (_: Exception) {}
+            savedVolumes[stream]?.let { volume ->
+                try { am.setStreamVolume(stream, volume, 0) } catch (_: Exception) {}
+            }
         }
-        savedVolumes.clear()
     }
 
-    private fun unmuteBeepDelayed(delayMs: Long = 400) {
-        silenceHandler.removeCallbacks(unmuteRunnable)
-        silenceHandler.postDelayed(unmuteRunnable, delayMs)
+    // Восстанавливаем сразу + несколько раз с задержками, т.к. Google может сбросить громкость после нашего первого restore
+    private fun scheduleVolumeRestore() {
+        silenceHandler.removeCallbacks(restoreRunnable)
+        doRestoreVolumes()
+        silenceHandler.postDelayed(restoreRunnable, 300L)
+        silenceHandler.postDelayed(restoreRunnable, 700L)
+        silenceHandler.postDelayed({ savedVolumes.clear() }, 800L)
     }
 
     private fun shouldMuteBeep() =
@@ -330,7 +338,7 @@ class VoiceFragment : Fragment() {
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         acquireWakeLock()
-        if (shouldMuteBeep()) muteBeep()
+        saveVolumes()
 
         val locale = if (isHebrewInput) "iw-IL" else "ru-RU"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -343,7 +351,7 @@ class VoiceFragment : Fragment() {
 
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                if (shouldMuteBeep()) unmuteBeepDelayed(300)
+                if (shouldMuteBeep()) scheduleVolumeRestore()
                 viewModel.onListening()
             }
             override fun onBeginningOfSpeech() {
@@ -363,7 +371,7 @@ class VoiceFragment : Fragment() {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
                 wakeScreen()
-                if (shouldMuteBeep()) unmuteBeepDelayed(300)
+                scheduleVolumeRestore()
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
@@ -379,7 +387,7 @@ class VoiceFragment : Fragment() {
             override fun onError(error: Int) {
                 silenceHandler.removeCallbacks(stopOnSilence)
                 releaseWakeLock()
-                if (shouldMuteBeep()) unmuteBeepDelayed(600)
+                scheduleVolumeRestore()
                 viewModel.onIdle()
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH,
@@ -403,7 +411,8 @@ class VoiceFragment : Fragment() {
 
     override fun onDestroyView() {
         silenceHandler.removeCallbacksAndMessages(null)
-        unmuteBeep()
+        doRestoreVolumes()
+        savedVolumes.clear()
         releaseWakeLock()
         stopRipple()
         super.onDestroyView()
