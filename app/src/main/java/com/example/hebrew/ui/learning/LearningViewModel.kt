@@ -229,6 +229,16 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         advanceAndShow()
     }
 
+    fun updateRussian(newText: String) {
+        val cur = _state.value as? LearningState.ShowCard ?: return
+        val updated = cur.card.copy(russian = newText)
+        viewModelScope.launch {
+            repository.update(updated)
+            allCards = allCards.map { if (it.id == updated.id) updated else it }
+            _state.value = cur.copy(card = updated)
+        }
+    }
+
     private fun advanceAndShow() {
         currentIndex++
         if (_mode.value == LearningMode.REVIEW) persistSession()

@@ -1,25 +1,37 @@
 package com.example.hebrew.ui.learning
 
+import android.Manifest
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.hebrew.R
 import com.example.hebrew.api.TransliterationHelper
-import com.example.hebrew.ui.learning.LearningMode
 import com.example.hebrew.databinding.FragmentLearningBinding
 import com.example.hebrew.databinding.ItemExampleBinding
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
@@ -30,6 +42,16 @@ class LearningFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: LearningViewModel by viewModels()
     private var tts: TextToSpeech? = null
+    private var isEditMode = false
+    private var editSpeechRecognizer: SpeechRecognizer? = null
+    private var saveJob: Job? = null
+
+    private val requestMicPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startCardVoiceRecognition()
+        else Toast.makeText(requireContext(), "Нужен доступ к микрофону", Toast.LENGTH_SHORT).show()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -43,6 +65,7 @@ class LearningFragment : Fragment() {
         initTts()
         setupSwipeAndTap()
         setupButtons()
+        setupEditButtons()
         observeState()
     }
 
@@ -81,9 +104,11 @@ class LearningFragment : Fragment() {
 
     private fun setupButtons() {
         binding.btnKnown.setOnClickListener {
+            saveEditIfNeeded()
             animateSwipe(toRight = true) { viewModel.markKnown() }
         }
         binding.btnUnknown.setOnClickListener {
+            saveEditIfNeeded()
             animateSwipe(toRight = false) { viewModel.markUnknown() }
         }
         binding.btnRestartLearning.setOnClickListener { viewModel.restartLearning() }
@@ -113,6 +138,123 @@ class LearningFragment : Fragment() {
         }
     }
 
+    // ── Edit card Russian text ────────────────────────────────────────────────
+
+    private fun setupEditButtons() {
+        binding.btnEditRussian.setOnClickListener {
+            if (isEditMode) exitEditMode() else enterEditMode()
+        }
+
+        binding.btnVoiceEditRussian.setOnClickListener {
+            startCardVoiceInput()
+        }
+
+        binding.etRussianWord.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (!isEditMode) return
+                saveJob?.cancel()
+                saveJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(500)
+                    val b = _binding ?: return@launch
+                    val text = b.etRussianWord.text.toString().trim()
+                    if (text.isNotBlank()) viewModel.updateRussian(text)
+                }
+            }
+        })
+
+        binding.etRussianWord.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus && isEditMode) exitEditMode()
+        }
+    }
+
+    private fun enterEditMode() {
+        isEditMode = true
+        binding.etRussianWord.apply {
+            isClickable = true
+            isFocusable = true
+            isFocusableInTouchMode = true
+            requestFocus()
+            setSelection(text.length)
+        }
+        binding.tvFlipBackHint.visibility = View.GONE
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(binding.etRussianWord, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun exitEditMode() {
+        saveJob?.cancel()
+        val text = binding.etRussianWord.text.toString().trim()
+        if (text.isNotBlank()) viewModel.updateRussian(text)
+        resetEditModeNoSave()
+    }
+
+    private fun resetEditModeNoSave() {
+        isEditMode = false
+        saveJob?.cancel()
+        if (_binding == null) return
+        binding.etRussianWord.apply {
+            clearFocus()
+            isClickable = false
+            isFocusable = false
+            isFocusableInTouchMode = false
+        }
+        binding.tvFlipBackHint.visibility = View.VISIBLE
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etRussianWord.windowToken, 0)
+    }
+
+    private fun saveEditIfNeeded() {
+        if (!isEditMode) return
+        exitEditMode()
+    }
+
+    // ── Voice input for card edit ─────────────────────────────────────────────
+
+    private fun startCardVoiceInput() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            startCardVoiceRecognition()
+        } else {
+            requestMicPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun startCardVoiceRecognition() {
+        editSpeechRecognizer?.destroy()
+        editSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ru-RU")
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
+        editSpeechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onResults(results: Bundle?) {
+                val text = results
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull()
+                if (!text.isNullOrBlank()) {
+                    binding.etRussianWord.setText(text)
+                    viewModel.updateRussian(text)
+                }
+            }
+            override fun onError(error: Int) {
+                Toast.makeText(requireContext(), getString(R.string.error_voice), Toast.LENGTH_SHORT).show()
+            }
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+        editSpeechRecognizer?.startListening(intent)
+    }
+
     // ── Observers ─────────────────────────────────────────────────────────────
 
     private fun observeState() {
@@ -132,6 +274,7 @@ class LearningFragment : Fragment() {
                     binding.tvSwipeHint.visibility = View.GONE
                 }
                 is LearningState.ShowCard -> {
+                    if (isEditMode) resetEditModeNoSave()
                     slowKeys.clear()
                     binding.layoutAllLearned.visibility = View.GONE
                     binding.scrollContent.visibility = View.VISIBLE
@@ -140,7 +283,7 @@ class LearningFragment : Fragment() {
                     binding.tvProgress.text =
                         getString(R.string.learning_progress, state.current, state.total)
                     binding.tvHebrewWord.text = state.card.hebrew
-                    binding.tvRussianWord.text = state.card.russian
+                    binding.etRussianWord.setText(state.card.russian)
                     binding.tvTransliteration.visibility = View.GONE
                     binding.tvTransliteration.text = ""
                     if (state.isFlipped) showBack() else showFront()
@@ -197,7 +340,6 @@ class LearningFragment : Fragment() {
             }
             binding.examplesContainer.addView(itemBinding.root)
         }
-        // Scroll to show examples
         binding.scrollContent.post {
             binding.scrollContent.smoothScrollTo(0, binding.examplesContainer.top)
         }
@@ -234,7 +376,7 @@ class LearningFragment : Fragment() {
 
         flipOut.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: android.animation.Animator) {
-                viewModel.toggleFlip()           // sets isFlipped = true → observer shows back
+                viewModel.toggleFlip()
                 binding.cardFront.visibility = View.GONE
                 binding.cardBack.visibility  = View.VISIBLE
                 flipIn.start()
@@ -253,7 +395,7 @@ class LearningFragment : Fragment() {
 
         flipOut.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: android.animation.Animator) {
-                viewModel.toggleFlip()           // sets isFlipped = false → observer shows front
+                viewModel.toggleFlip()
                 binding.cardBack.visibility  = View.GONE
                 binding.cardFront.visibility = View.VISIBLE
                 flipIn.start()
@@ -288,18 +430,22 @@ class LearningFragment : Fragment() {
                         abs(diffX) > SWIPE_THRESHOLD &&
                         abs(velocityX) > SWIPE_VELOCITY
                     ) {
-                        if (diffX > 0) animateSwipe(true)  { viewModel.markKnown() }
-                        else           animateSwipe(false) { viewModel.markUnknown() }
+                        if (diffX > 0) {
+                            saveEditIfNeeded()
+                            animateSwipe(true)  { viewModel.markKnown() }
+                        } else {
+                            saveEditIfNeeded()
+                            animateSwipe(false) { viewModel.markUnknown() }
+                        }
                         return true
                     }
                     return false
                 }
             })
 
-        // Return true always so Android delivers the full gesture sequence (MOVE, UP)
         val touchListener = View.OnTouchListener { _, event ->
-            detector.onTouchEvent(event)
-            true
+            if (isEditMode) false
+            else { detector.onTouchEvent(event); true }
         }
         binding.cardContainer.setOnTouchListener(touchListener)
         binding.cardFront.setOnTouchListener(touchListener)
@@ -336,6 +482,9 @@ class LearningFragment : Fragment() {
         tts?.stop()
         tts?.shutdown()
         tts = null
+        saveJob?.cancel()
+        editSpeechRecognizer?.destroy()
+        editSpeechRecognizer = null
         super.onDestroyView()
         _binding = null
     }
