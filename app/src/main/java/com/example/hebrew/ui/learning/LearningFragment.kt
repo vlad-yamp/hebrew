@@ -420,6 +420,8 @@ class LearningFragment : Fragment() {
                 private val SWIPE_THRESHOLD = 80
                 private val SWIPE_VELOCITY  = 80
 
+                override fun onDown(e: MotionEvent): Boolean = true
+
                 override fun onSingleTapUp(e: MotionEvent): Boolean {
                     handleCardTap()
                     return true
@@ -452,12 +454,23 @@ class LearningFragment : Fragment() {
             })
 
         val touchListener = View.OnTouchListener { _, event ->
-            if (isEditMode) false
-            else { detector.onTouchEvent(event); true }
+            if (isEditMode) {
+                false
+            } else {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN ->
+                        binding.scrollContent.requestDisallowInterceptTouchEvent(true)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                        binding.scrollContent.requestDisallowInterceptTouchEvent(false)
+                }
+                detector.onTouchEvent(event)
+                true
+            }
         }
         binding.cardContainer.setOnTouchListener(touchListener)
         binding.cardFront.setOnTouchListener(touchListener)
         binding.cardBack.setOnTouchListener(touchListener)
+        binding.etRussianWord.setOnTouchListener(touchListener)
     }
 
     // ── Swipe animation ───────────────────────────────────────────────────────
