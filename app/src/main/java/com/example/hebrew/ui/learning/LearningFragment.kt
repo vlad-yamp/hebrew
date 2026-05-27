@@ -111,6 +111,14 @@ class LearningFragment : Fragment() {
             saveEditIfNeeded()
             animateSwipe(toRight = false) { viewModel.markUnknown() }
         }
+        binding.btnUndo.setOnClickListener {
+            saveEditIfNeeded()
+            viewModel.undoLastAction()
+        }
+        viewModel.canUndo.observe(viewLifecycleOwner) { can ->
+            binding.btnUndo.isEnabled = can
+            binding.btnUndo.alpha = if (can) 1f else 0.4f
+        }
         binding.btnRestartLearning.setOnClickListener { viewModel.restartLearning() }
         binding.btnSpeak.setOnClickListener {
             val card = (viewModel.state.value as? LearningState.ShowCard)?.card ?: return@setOnClickListener

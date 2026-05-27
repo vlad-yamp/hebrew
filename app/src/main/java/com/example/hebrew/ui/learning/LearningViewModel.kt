@@ -32,6 +32,12 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     private val _memorizedCount = MutableLiveData(0)
     val memorizedCount: LiveData<Int> = _memorizedCount
 
+    private val _canUndo = MutableLiveData(false)
+    val canUndo: LiveData<Boolean> = _canUndo
+
+    private data class UndoEntry(val cardId: Long, val previousKnownCount: Int, val indexBefore: Int)
+    private val undoStack = ArrayDeque<UndoEntry>()
+
     private val _mode = MutableLiveData(
         if (prefs.getBoolean("learning_mode_memorize", true)) LearningMode.MEMORIZE
         else LearningMode.REVIEW
@@ -64,6 +70,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         _mode.value = mode
         prefs.edit().putBoolean("learning_mode_memorize", mode == LearningMode.MEMORIZE).apply()
         _examplesState.value = ExamplesState.Idle
+        clearUndoStack()
         clearSession()
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
@@ -207,6 +214,8 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     fun markKnown() {
         val cur = _state.value as? LearningState.ShowCard ?: return
         val card = cur.card
+        undoStack.addLast(UndoEntry(card.id, card.knownCount, currentIndex))
+        _canUndo.value = true
         viewModelScope.launch {
             val updated = card.copy(knownCount = card.knownCount + 1)
             repository.update(updated)
@@ -219,14 +228,35 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
     fun markUnknown() {
         val cur = _state.value as? LearningState.ShowCard ?: return
         val card = cur.card
-        if (card.knownCount > 0) {
-            viewModelScope.launch {
+        undoStack.addLast(UndoEntry(card.id, card.knownCount, currentIndex))
+        _canUndo.value = true
+        viewModelScope.launch {
+            if (card.knownCount > 0) {
                 val reset = card.copy(knownCount = 0)
                 repository.update(reset)
                 allCards = allCards.map { if (it.id == card.id) reset else it }
             }
+            advanceAndShow()
         }
-        advanceAndShow()
+    }
+
+    fun undoLastAction() {
+        val entry = undoStack.removeLastOrNull() ?: return
+        _canUndo.value = undoStack.isNotEmpty()
+        viewModelScope.launch {
+            val card = allCards.find { it.id == entry.cardId }
+            if (card != null && card.knownCount != entry.previousKnownCount) {
+                val restored = card.copy(knownCount = entry.previousKnownCount)
+                repository.update(restored)
+                allCards = allCards.map { if (it.id == restored.id) restored else it }
+                if (card.knownCount >= threshold() || restored.knownCount >= threshold()) {
+                    refreshMemorizedCount()
+                }
+            }
+            currentIndex = entry.indexBefore
+            if (_mode.value == LearningMode.REVIEW) persistSession()
+            showCurrentCard()
+        }
     }
 
     fun updateRussian(newText: String) {
@@ -284,6 +314,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
             repository.resetAllKnownCounts()
             allCards = repository.getLearningCards(threshold())
             refreshMemorizedCount()
+            clearUndoStack()
             clearSession()
             memorizeActiveIds.clear()
             memorizePoolIndex = 0
@@ -312,6 +343,11 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun clearSession() {
         prefs.edit().remove("session_queue").remove("session_index").apply()
+    }
+
+    private fun clearUndoStack() {
+        undoStack.clear()
+        _canUndo.value = false
     }
 
     companion object {

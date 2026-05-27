@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Yampolskiy\\\\.claude\\\\projects\\\\\" -Recurse | Where-Object { $_.Extension -eq \".jsonl\" } | Sort-Object LastWriteTime -Descending | Select-Object -First 10 FullName, LastWriteTime)"
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Yampolskiy\\\\.claude\\\\projects\\\\\" -Recurse | Where-Object { $_.Extension -eq \".jsonl\" } | Sort-Object LastWriteTime -Descending | Select-Object -First 10 FullName, LastWriteTime)",
+      "Bash(./gradlew assembleDebug --quiet)",
+      "Bash(./gradlew assembleDebug --stacktrace)",
+      "Bash(./gradlew assembleDebug --info)",
+      "Bash(git stash *)",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Yampolskiy\\\\.gradle\\\\caches\\\\8.9\\\\transforms\\\\f17766075dd9ee8f4e4150547a633b29\" -ErrorAction SilentlyContinue)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(./gradlew compileDebugKotlin)"
     ]
   }
 }

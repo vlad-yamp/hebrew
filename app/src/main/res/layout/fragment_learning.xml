@@ -293,16 +293,29 @@
             android:layout_width="0dp"
             android:layout_height="52dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="6dp"
             android:text="@string/btn_unknown"
             android:backgroundTint="@color/colorUnknown" />
+
+        <ImageButton
+            android:id="@+id/btnUndo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/bg_undo_button"
+            android:src="@drawable/ic_undo"
+            android:tint="@color/colorPrimaryDark"
+            android:padding="12dp"
+            android:alpha="0.4"
+            android:enabled="false"
+            android:contentDescription="@string/btn_undo" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnKnown"
             android:layout_width="0dp"
             android:layout_height="52dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="6dp"
             android:text="@string/btn_known"
             android:backgroundTint="@color/colorKnown" />
     </LinearLayout>
