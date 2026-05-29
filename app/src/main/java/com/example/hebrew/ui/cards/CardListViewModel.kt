@@ -18,7 +18,10 @@ class CardListViewModel(app: Application) : AndroidViewModel(app) {
 
     fun getThreshold(): Int = prefs.getInt("repetitions_count", 4)
 
-    fun clearAll() = viewModelScope.launch { repository.deleteAll() }
+    fun clearAll() = viewModelScope.launch {
+        repository.deleteAll()
+        prefs.edit().putBoolean("learning_mode_memorize", true).apply()
+    }
 
     fun resetAll() = viewModelScope.launch { repository.resetAllKnownCounts() }
 

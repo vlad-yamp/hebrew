@@ -142,11 +142,18 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         buildMemorizeQueue()
     }
 
+    private fun completedMemorizeMode() {
+        _mode.value = LearningMode.REVIEW
+        prefs.edit().putBoolean("learning_mode_memorize", false).apply()
+        clearSession()
+        _state.value = LearningState.AllLearned
+    }
+
     private fun buildMemorizeQueue() {
         val active = allCards.filter { it.id in memorizeActiveIds }.shuffled()
         if (active.isEmpty()) {
             if (memorizePoolIndex >= memorizePool.size) {
-                clearSession(); _state.value = LearningState.AllLearned
+                completedMemorizeMode()
             } else {
                 refillMemorizeActive()
                 buildMemorizeQueue()
@@ -174,7 +181,7 @@ class LearningViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             allCards = repository.getLearningCards(threshold())
             refreshMemorizedCount()
-            if (allCards.isEmpty()) { clearSession(); _state.value = LearningState.AllLearned; return@launch }
+            if (allCards.isEmpty()) { completedMemorizeMode(); return@launch }
 
             // Remove graduated cards from active set
             memorizeActiveIds.removeAll { id -> allCards.none { it.id == id } }
